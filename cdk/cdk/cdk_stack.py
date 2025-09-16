@@ -13,7 +13,7 @@ class CdkStack(Stack):
 
         # Rimuovi l'accesso pubblico
         website_bucket = s3.Bucket(self, "FrontendBucket",
-            bucket_name="Rate-Your-Music-Salvatore101", # Deve essere unico globalmente
+            bucket_name="rate-your-music101", # Deve essere unico globalmente
             website_index_document="index.html",
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL, # Blocca tutto l'accesso pubblico
             removal_policy=RemovalPolicy.DESTROY,
