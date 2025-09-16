@@ -1,0 +1,29 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Installing npm dependencies..."
+      - npm install
+  build:
+    commands:
+      - echo "Building React app..."
+      - npm run build
+artifacts:
+  files:
+    - "**/*"
+  base-directory: "build" # La cartella di output di 'npm run build'version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Installing npm dependencies..."
+      - npm install
+  build:
+    commands:
+      - echo "Building React app..."
+      - npm run build
+artifacts:
+  files:
+    - "**/*"
+  base-directory: "build" # La cartella di output di 'npm run build'

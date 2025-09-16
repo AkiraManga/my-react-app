@@ -1,0 +1,13 @@
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+body{
+  margin: 0;
+  background: #111;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+}
+
+/* se in futuro volessi tornare alle scroll‑animations natie */
+@keyframes scrollRotate { to { --k: 1; } }
