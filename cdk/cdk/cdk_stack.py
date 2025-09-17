@@ -5,6 +5,7 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_apigateway as apigw,
     RemovalPolicy,
+    aws_cognito as cognito
 )
 from constructs import Construct
 
@@ -38,10 +39,43 @@ class CdkStack(Stack):
             handler="app.handler",  # app.py → funzione handler
             code=_lambda.Code.from_asset("lambda")
         )
+                # Cognito User Pool
+        user_pool = cognito.UserPool(
+            self, "RateYourMusicUserPool",
+            self_sign_up_enabled=True,
+            sign_in_aliases=cognito.SignInAliases(email=True),
+            auto_verify=cognito.AutoVerifiedAttrs(email=True),
+            password_policy=cognito.PasswordPolicy(
+                min_length=8,
+                require_lowercase=True,
+                require_digits=True
+            ),
+            removal_policy=RemovalPolicy.DESTROY
+        )
 
-        # API Gateway REST che punta alla Lambda
+        # Client per il frontend React
+        user_pool_client = cognito.UserPoolClient(
+            self, "RateYourMusicClient",
+            user_pool=user_pool,
+            generate_secret=False,
+            auth_flows=cognito.AuthFlow(user_password=True)
+        )
+
+        # Authorizer per API Gateway
+        authorizer = apigw.CognitoUserPoolsAuthorizer(
+            self, "RateYourMusicAuthorizer",
+            cognito_user_pools=[user_pool]
+        )
+        # API Gateway protetto da Cognito
         api = apigw.LambdaRestApi(
             self, "RateYourMusicApi",
             handler=lambda_fn,
-            proxy=True
+            proxy=True,
+            default_method_options={
+                "authorizer": authorizer,
+                "authorization_type": apigw.AuthorizationType.COGNITO
+            }
         )
+
+
+
