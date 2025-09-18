@@ -66,8 +66,8 @@ class CdkStack(Stack):
                     cognito.OAuthScope.EMAIL,
                     cognito.OAuthScope.PROFILE,
                 ],
-                callback_urls=["https://jwt.io"],
-                logout_urls=["https://jwt.io"],
+                callback_urls=["http://localhost:5173/callback"],
+                logout_urls=["http://localhost:5173"],
             ),
         )
 
@@ -125,6 +125,22 @@ class CdkStack(Stack):
         )
         users_table.grant_read_write_data(favorites_fn)
 
+
+        # --------------------------
+        # Auth Callback Lambda
+        # --------------------------
+        auth_fn = _lambda.Function(
+            self, "AuthLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            handler="auth.handler",
+            code=_lambda.Code.from_asset("lambda/auth"),
+            environment={
+                "COGNITO_DOMAIN": f"{domain.domain_name}.auth.eu-west-3.amazoncognito.com",
+                "COGNITO_CLIENT_ID": user_pool_client.user_pool_client_id,
+                "REDIRECT_URI": "http://localhost:5173/callback"  # poi sostituirai col tuo sito React
+            }
+        )
+
         # --------------------------
         # API Gateway + Cognito Authorizer
         # --------------------------
@@ -134,6 +150,11 @@ class CdkStack(Stack):
         )
 
         api = apigw.RestApi(self, "RateYourMusicApi")
+
+        # Endpoint pubblico per lo scambio code → token
+        auth_resource = api.root.add_resource("auth")
+        auth_callback = auth_resource.add_resource("callback")
+        auth_callback.add_method("GET", apigw.LambdaIntegration(auth_fn))
 
         api.root.add_resource("albums").add_method(
             "GET",
