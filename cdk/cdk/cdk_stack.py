@@ -6,6 +6,7 @@ from aws_cdk import (
     aws_apigateway as apigw,
     aws_dynamodb as dynamodb,
     aws_cognito as cognito,
+    Duration,
     RemovalPolicy,
 )
 from constructs import Construct
