@@ -6,6 +6,8 @@ from aws_cdk import (
     aws_apigateway as apigw,
     aws_dynamodb as dynamodb,
     aws_cognito as cognito,
+    aws_sqs as sqs,
+    aws_lambda_event_sources as lambda_event_sources,
     Duration,
     RemovalPolicy,
 )
@@ -141,6 +143,41 @@ class CdkStack(Stack):
             timeout=Duration.seconds(30),
             memory_size=512,
         )
+                # --------------------------
+        # SQS Queue
+        # --------------------------
+        queue = sqs.Queue(
+            self, "AppQueue",
+            visibility_timeout=Duration.seconds(30)
+        )
+
+        # --------------------------
+        # Producer Lambda (invia messaggi a SQS)
+        # --------------------------
+        producer_fn = _lambda.DockerImageFunction(
+            self, "ProducerLambda",
+            code=_lambda.DockerImageCode.from_image_asset("lambda/producer"),
+            timeout=Duration.seconds(30),
+            memory_size=256,
+            environment={
+                "QUEUE_URL": queue.queue_url
+            }
+        )
+        queue.grant_send_messages(producer_fn)
+
+        # --------------------------
+        # Consumer Lambda (consuma messaggi da SQS)
+        # --------------------------
+        consumer_fn = _lambda.DockerImageFunction(
+            self, "ConsumerLambda",
+            code=_lambda.DockerImageCode.from_image_asset("lambda/consumer"),
+            timeout=Duration.seconds(30),
+            memory_size=256
+        )
+
+        # Collega la coda alla consumer Lambda
+        consumer_fn.add_event_source(lambda_event_sources.SqsEventSource(queue))
+
 
 
         # --------------------------
@@ -152,6 +189,16 @@ class CdkStack(Stack):
         )
 
         api = apigw.RestApi(self, "RateYourMusicApi")
+
+        producer_resource = api.root.add_resource("producer")
+        producer_resource.add_method(
+            "POST",
+            apigw.LambdaIntegration(producer_fn),
+            # opzionale: se vuoi proteggerlo con Cognito
+            # authorizer=authorizer,
+            # authorization_type=apigw.AuthorizationType.COGNITO,
+        )
+
 
         # Endpoint pubblico per lo scambio code → token
         auth_resource = api.root.add_resource("auth")
