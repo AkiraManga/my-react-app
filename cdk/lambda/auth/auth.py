@@ -18,7 +18,7 @@ def handler(event, context):
             }
 
         # Endpoint token Cognito
-        token_url = f"https://{COGNITO_DOMAIN}/oauth2/token"
+        token_url = f"{COGNITO_DOMAIN}/oauth2/token"
 
         # Parametri
         data = {

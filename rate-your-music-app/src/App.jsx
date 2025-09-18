@@ -8,13 +8,15 @@ function App() {
     <Router>
       <div className="app-container">
         <Header />
+        <Gallery3D />   {/* <-- sempre visibile */}
         <Routes>
-          <Route path="/" element={<Gallery3D />} />
+          <Route path="/" element={null} />
           <Route path="/callback" element={<Callback />} />
         </Routes>
       </div>
     </Router>
   );
 }
+
 
 export default App;
