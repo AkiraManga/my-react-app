@@ -129,17 +129,18 @@ class CdkStack(Stack):
         # --------------------------
         # Auth Callback Lambda
         # --------------------------
-        auth_fn = _lambda.Function(
+        auth_fn = _lambda.DockerImageFunction(
             self, "AuthLambda",
-            runtime=_lambda.Runtime.PYTHON_3_12,
-            handler="auth.handler",
-            code=_lambda.Code.from_asset("lambda/auth"),
+            code=_lambda.DockerImageCode.from_image_asset("lambda/auth"),
             environment={
                 "COGNITO_DOMAIN": f"{domain.domain_name}.auth.eu-west-3.amazoncognito.com",
                 "COGNITO_CLIENT_ID": user_pool_client.user_pool_client_id,
-                "REDIRECT_URI": "http://localhost:5173/callback"  # poi sostituirai col tuo sito React
-            }
+                "REDIRECT_URI": "http://localhost:5173/callback"  # poi sostituirai col dominio reale
+            },
+            timeout=Duration.seconds(30),
+            memory_size=512,
         )
+
 
         # --------------------------
         # API Gateway + Cognito Authorizer
