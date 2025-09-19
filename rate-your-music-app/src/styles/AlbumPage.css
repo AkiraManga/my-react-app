@@ -1,0 +1,51 @@
+.album-page {
+  padding: 2rem;
+  color: #fff;
+  background-color: #111;
+  min-height: 100vh;
+}
+
+.album-header {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.album-cover {
+  width: 300px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.6);
+}
+
+.album-info {
+  max-width: 600px;
+}
+
+.album-info h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.album-desc {
+  margin-top: 1rem;
+  font-style: italic;
+  color: #bbb;
+}
+
+.tracklist {
+  margin-top: 2rem;
+}
+
+.tracklist h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.tracklist ol {
+  list-style-position: inside;
+  padding: 0;
+}
+
+.tracklist li {
+  margin: 0.5rem 0;
+}

@@ -9,16 +9,33 @@ REDIRECT_URI = os.environ["REDIRECT_URI"]
 
 def handler(event, context):
     try:
+        # Gestione CORS preflight
+        if event.get("httpMethod") == "OPTIONS":
+            return {
+                "statusCode": 200,
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "OPTIONS,GET,POST",
+                    "Access-Control-Allow-Headers": "Content-Type,Authorization"
+                },
+                "body": ""
+            }
+
         # Recupera il "code" dalla query string
         code = event.get("queryStringParameters", {}).get("code")
         if not code:
             return {
                 "statusCode": 400,
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "OPTIONS,GET,POST",
+                    "Access-Control-Allow-Headers": "Content-Type,Authorization"
+                },
                 "body": json.dumps({"error": "Missing code"})
             }
 
         # Endpoint token Cognito
-        token_url = f"{COGNITO_DOMAIN}/oauth2/token"
+        token_url = f"https://{COGNITO_DOMAIN}/oauth2/token"
 
         # Parametri
         data = {
@@ -44,7 +61,9 @@ def handler(event, context):
             "statusCode": status,
             "headers": {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "OPTIONS,GET,POST",
+                "Access-Control-Allow-Headers": "Content-Type,Authorization"
             },
             "body": body
         }
@@ -52,5 +71,10 @@ def handler(event, context):
     except Exception as e:
         return {
             "statusCode": 500,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "OPTIONS,GET,POST",
+                "Access-Control-Allow-Headers": "Content-Type,Authorization"
+            },
             "body": json.dumps({"error": str(e)})
         }

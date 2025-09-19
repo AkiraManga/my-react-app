@@ -8,6 +8,9 @@ from aws_cdk import (
     aws_cognito as cognito,
     aws_sqs as sqs,
     aws_lambda_event_sources as lambda_event_sources,
+    aws_s3_deployment as s3deploy,
+    aws_cloudfront as cloudfront,
+    aws_cloudfront_origins as origins,
     Duration,
     RemovalPolicy,
 )
@@ -31,12 +34,26 @@ class CdkStack(Stack):
             auto_delete_objects=True,
         )
 
-        website_bucket.add_to_resource_policy(
-            iam.PolicyStatement(
-                actions=["s3:GetObject"],
-                resources=[website_bucket.arn_for_objects("*")],
-                principals=[iam.ArnPrincipal("arn:aws:iam::384981131796:user/Salvatore")]
-            )
+        # --------------------------
+        # CloudFront Distribution
+        # --------------------------
+        distribution = cloudfront.Distribution(
+            self, "FrontendDistribution",
+            default_behavior=cloudfront.BehaviorOptions(
+                origin=origins.S3Origin(website_bucket)
+            ),
+            default_root_object="index.html",
+        )
+
+        # --------------------------
+        # Deployment automatico dei file buildati
+        # --------------------------
+        s3deploy.BucketDeployment(
+            self, "DeployFrontend",
+            sources=[s3deploy.Source.asset("../frontend/dist")],  # cartella buildata
+            destination_bucket=website_bucket,
+            distribution=distribution,          # invalida cache CloudFront
+            distribution_paths=["/*"],
         )
 
         # --------------------------
@@ -225,3 +242,6 @@ class CdkStack(Stack):
             authorizer=authorizer,
             authorization_type=apigw.AuthorizationType.COGNITO,
         )
+        # Output (così vedi l’URL finale dopo il deploy)
+        from aws_cdk import CfnOutput
+        CfnOutput(self, "CloudFrontURL", value=distribution.distribution_domain_name)

@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 
 /* ---------------- immagini ---------------- */
 const imgs = [
-  'https://images4.alphacoders.com/678/thumb-1920-678317.jpg',
-  'https://images5.alphacoders.com/653/653698.jpg',
-  'https://images6.alphacoders.com/803/thumb-1920-803643.png',
-  'https://images.alphacoders.com/785/thumb-1920-785833.png',
-  'https://images6.alphacoders.com/749/thumb-1920-749966.png',
-  'https://images4.alphacoders.com/761/thumb-1920-761076.png',
-  'https://images.alphacoders.com/682/thumb-1920-682570.png',
-  'https://images4.alphacoders.com/866/thumb-1920-866812.png',
+  'https://www.lafeltrinelli.it/images/0888837168618_0_0_0_0_0.jpg',
+  'https://i.scdn.co/image/ab67616d00001e022a64ebd96553453a516892ba',
+  'https://upload.wikimedia.org/wikipedia/commons/6/60/Charli_XCX_-_Brat_%28album_cover%29.png',
+  'https://m.media-amazon.com/images/I/71FM257lYjL._UF894,1000_QL80_.jpg',
+  'https://m.media-amazon.com/images/I/71EYmWxcmdL._UF894,1000_QL80_.jpg',
+  'https://www.musictraks.com/wp-content/uploads/2025/04/i-cani.jpg',
+  'https://m.media-amazon.com/images/I/618nkXxBxsL.jpg',
+  'https://www.lafeltrinelli.it/images/0602577230936_0_0_0_0_0.jpg',
 ];
 
 /* ---------------- componente ---------------- */

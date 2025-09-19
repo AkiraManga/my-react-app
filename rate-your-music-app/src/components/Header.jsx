@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import '../styles/Header.css';
 
 const Header = () => {
@@ -10,6 +11,8 @@ const Header = () => {
   const scope = "openid profile email";
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const token = sessionStorage.getItem("id_token");
@@ -23,6 +26,7 @@ const Header = () => {
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
+
   const handleLogin = () => {
     const loginUrl = `${domain}/login?client_id=${clientId}&response_type=${responseType}&scope=${encodeURIComponent(
       scope
@@ -31,22 +35,40 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-  sessionStorage.removeItem("id_token");
-  sessionStorage.removeItem("access_token");
-  sessionStorage.removeItem("refresh_token");
+    sessionStorage.removeItem("id_token");
+    sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("refresh_token");
 
     setIsLoggedIn(false);
 
-  const logoutUrl = `${domain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(
-    logoutRedirect
-  )}`;
-  window.location.href = logoutUrl;
-};
+    const logoutUrl = `${domain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(
+      logoutRedirect
+    )}`;
+    window.location.href = logoutUrl;
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (search.trim()) {
+      // Trasforma il testo in un id leggibile per l’URL
+      const id = search.toLowerCase().replace(/\s+/g, "-");
+      navigate(`/album/${id}`);
+      setSearch("");
+    }
+  };
 
   return (
     <header className="main-header">
       <div className="search-container">
-        <input type="text" placeholder="Cerca album..." className="search-bar" />
+        <form onSubmit={handleSearch}>
+          <input
+            type="text"
+            placeholder="Cerca album..."
+            className="search-bar"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </form>
       </div>
       <div className="login-container">
         {!isLoggedIn ? (
