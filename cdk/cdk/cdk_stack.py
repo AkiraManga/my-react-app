@@ -21,29 +21,85 @@ class CdkStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
-
         # --------------------------
-        # S3 Bucket per il frontend
+        # S3 Bucket per il frontend (privato)
         # --------------------------
         website_bucket = s3.Bucket(
             self, "FrontendBucket",
             bucket_name="rate-your-music101",  # deve essere unico globalmente
-            website_index_document="index.html",
-            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,  # privato
             removal_policy=RemovalPolicy.DESTROY,
             auto_delete_objects=True,
         )
 
         # --------------------------
-        # CloudFront Distribution
+        # Origin Access Control (OAC) per CloudFront -> S3
         # --------------------------
-        distribution = cloudfront.Distribution(
+        oac = cloudfront.CfnOriginAccessControl(
+            self, "MyOAC",
+            origin_access_control_config=cloudfront.CfnOriginAccessControl.OriginAccessControlConfigProperty(
+                name="MyOAC",
+                origin_access_control_origin_type="s3",
+                signing_behavior="always",
+                signing_protocol="sigv4",
+                description="OAC per CloudFront -> S3"
+            )
+        )
+
+        # --------------------------
+        # CloudFront Distribution SOLO con OAC
+        # --------------------------
+        distribution = cloudfront.CfnDistribution(
             self, "FrontendDistribution",
-            default_behavior=cloudfront.BehaviorOptions(
-                origin=origins.S3Origin(website_bucket),
-                viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
-            ),
-            default_root_object="index.html",
+            distribution_config=cloudfront.CfnDistribution.DistributionConfigProperty(
+                enabled=True,
+                default_root_object="index.html",
+                origins=[cloudfront.CfnDistribution.OriginProperty(
+                    id="S3Origin",
+                    domain_name=website_bucket.bucket_regional_domain_name,
+                    s3_origin_config=cloudfront.CfnDistribution.S3OriginConfigProperty(
+                        origin_access_identity=""  # ⚠️ vuoto → NO OAI
+                    ),
+                    origin_access_control_id=oac.get_att("Id").to_string()
+                )],
+                default_cache_behavior=cloudfront.CfnDistribution.DefaultCacheBehaviorProperty(
+                    target_origin_id="S3Origin",
+                    viewer_protocol_policy="redirect-to-https",
+                    allowed_methods=["GET", "HEAD", "OPTIONS"],
+                    cached_methods=["GET", "HEAD", "OPTIONS"],
+                    forwarded_values=cloudfront.CfnDistribution.ForwardedValuesProperty(
+                        query_string=False,
+                        cookies=cloudfront.CfnDistribution.CookiesProperty(forward="none")
+                    )
+                ),
+                custom_error_responses=[
+                    cloudfront.CfnDistribution.CustomErrorResponseProperty(
+                        error_code=403,
+                        response_code=200,
+                        response_page_path="/index.html",
+                    ),
+                    cloudfront.CfnDistribution.CustomErrorResponseProperty(
+                        error_code=404,
+                        response_code=200,
+                        response_page_path="/index.html",
+                    )
+                ]
+            )
+        )
+         # --------------------------
+        # Bucket Policy per permettere a CloudFront di leggere dal bucket
+        # --------------------------
+        website_bucket.add_to_resource_policy(
+            iam.PolicyStatement(
+                actions=["s3:GetObject"],
+                resources=[f"{website_bucket.bucket_arn}/*"],
+                principals=[iam.ServicePrincipal("cloudfront.amazonaws.com")],
+                conditions={
+                    "StringEquals": {
+                        "AWS:SourceArn": f"arn:aws:cloudfront::{self.account}:distribution/{distribution.ref}"
+                    }
+                },
+            )
         )
 
         # --------------------------
@@ -53,9 +109,12 @@ class CdkStack(Stack):
             self, "DeployFrontend",
             sources=[s3deploy.Source.asset("../rate-your-music-app/dist")],  # cartella buildata
             destination_bucket=website_bucket,
-            distribution=distribution,          # invalida cache CloudFront
+            distribution=distribution,
             distribution_paths=["/*"],
         )
+
+
+
 
         # --------------------------
         # Cognito User Pool
@@ -245,4 +304,5 @@ class CdkStack(Stack):
         )
         # Output (così vedi l’URL finale dopo il deploy)
         from aws_cdk import CfnOutput
-        CfnOutput(self, "CloudFrontURL", value=distribution.distribution_domain_name)
+        CfnOutput(self, "CloudFrontURL", value=distribution.attr_domain_name)
+
