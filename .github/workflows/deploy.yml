@@ -52,12 +52,12 @@ jobs:
       # 🔹 Step aggiunti: build del frontend
       - name: Install frontend dependencies
         run: |
-          cd Cloud/rate-your-music-app
+          cd rate-your-music-app
           npm ci
 
       - name: Build frontend
         run: |
-          cd Cloud/rate-your-music-app
+          cd rate-your-music-app
           npm run build
 
       - name: Install CDK dependencies
