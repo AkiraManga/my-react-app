@@ -40,7 +40,7 @@ class CdkStack(Stack):
         distribution = cloudfront.Distribution(
             self, "FrontendDistribution",
             default_behavior=cloudfront.BehaviorOptions(
-                origin=origins.S3Origin(website_bucket)
+                origin=origins.S3BucketOrigin(website_bucket)
             ),
             default_root_object="index.html",
         )
