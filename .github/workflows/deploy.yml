@@ -59,9 +59,10 @@ jobs:
         run: |
           cd rate-your-music-app
           npm run build
+
       - name: Debug dist
         run: |
-          ls -R rate-your-music-app
+          ls -l rate-your-music-app/dist
 
 
       - name: Install CDK dependencies

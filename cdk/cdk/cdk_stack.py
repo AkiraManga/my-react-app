@@ -50,7 +50,7 @@ class CdkStack(Stack):
         # --------------------------
         s3deploy.BucketDeployment(
             self, "DeployFrontend",
-            sources=[s3deploy.Source.asset("../../rate-your-music-app/dist")],  # cartella buildata
+            sources=[s3deploy.Source.asset("../rate-your-music-app/dist")],  # cartella buildata
             destination_bucket=website_bucket,
             distribution=distribution,          # invalida cache CloudFront
             distribution_paths=["/*"],
