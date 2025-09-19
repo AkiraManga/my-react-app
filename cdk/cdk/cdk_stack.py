@@ -41,6 +41,7 @@ class CdkStack(Stack):
             self, "FrontendDistribution",
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origins.S3BucketOrigin(website_bucket)
+                viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS
             ),
             default_root_object="index.html",
         )
