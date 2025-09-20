@@ -21,6 +21,7 @@ class CdkStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
         # --------------------------
         # S3 Bucket per il frontend (privato)
         # --------------------------
@@ -86,7 +87,8 @@ class CdkStack(Stack):
                 ]
             )
         )
-         # --------------------------
+
+        # --------------------------
         # Bucket Policy per permettere a CloudFront di leggere dal bucket
         # --------------------------
         website_bucket.add_to_resource_policy(
@@ -101,20 +103,6 @@ class CdkStack(Stack):
                 },
             )
         )
-
-        # --------------------------
-        # Deployment automatico dei file buildati
-        # --------------------------
-        s3deploy.BucketDeployment(
-            self, "DeployFrontend",
-            sources=[s3deploy.Source.asset("../rate-your-music-app/dist")],  # cartella buildata
-            destination_bucket=website_bucket,
-            distribution=distribution,
-            distribution_paths=["/*"],
-        )
-
-
-
 
         # --------------------------
         # Cognito User Pool
@@ -150,7 +138,6 @@ class CdkStack(Stack):
                 logout_urls=[f"https://{distribution.attr_domain_name}"],             # ✅ URL CloudFront
             ),
         )
-
 
         domain = user_pool.add_domain(
             "RateYourMusicDomain",
@@ -206,7 +193,6 @@ class CdkStack(Stack):
         )
         users_table.grant_read_write_data(favorites_fn)
 
-
         # --------------------------
         # Auth Callback Lambda
         # --------------------------
@@ -216,12 +202,13 @@ class CdkStack(Stack):
             environment={
                 "COGNITO_DOMAIN": f"{domain.domain_name}.auth.eu-west-3.amazoncognito.com",
                 "COGNITO_CLIENT_ID": user_pool_client.user_pool_client_id,
-                "REDIRECT_URI": "https://dfxq4ov956y7j.cloudfront.net/callback"  # poi sostituirai col dominio reale
+                "REDIRECT_URI": f"https://{distribution.attr_domain_name}/callback"
             },
             timeout=Duration.seconds(30),
             memory_size=512,
         )
-                # --------------------------
+
+        # --------------------------
         # SQS Queue
         # --------------------------
         queue = sqs.Queue(
@@ -252,11 +239,7 @@ class CdkStack(Stack):
             timeout=Duration.seconds(30),
             memory_size=256
         )
-
-        # Collega la coda alla consumer Lambda
         consumer_fn.add_event_source(lambda_event_sources.SqsEventSource(queue))
-
-
 
         # --------------------------
         # API Gateway + Cognito Authorizer
@@ -266,17 +249,14 @@ class CdkStack(Stack):
             cognito_user_pools=[user_pool],
         )
 
-        api = apigw.RestApi(self, "RateYourMusicApi")
-
-        producer_resource = api.root.add_resource("producer")
-        producer_resource.add_method(
-            "POST",
-            apigw.LambdaIntegration(producer_fn),
-            # opzionale: se vuoi proteggerlo con Cognito
-            # authorizer=authorizer,
-            # authorization_type=apigw.AuthorizationType.COGNITO,
+        api = apigw.RestApi(
+            self, "RateYourMusicApi",
+            rest_api_name="RateYourMusicApi",
+            deploy_options=apigw.StageOptions(stage_name="prod"),
         )
 
+        producer_resource = api.root.add_resource("producer")
+        producer_resource.add_method("POST", apigw.LambdaIntegration(producer_fn))
 
         # Endpoint pubblico per lo scambio code → token
         auth_resource = api.root.add_resource("auth")
@@ -303,7 +283,30 @@ class CdkStack(Stack):
             authorizer=authorizer,
             authorization_type=apigw.AuthorizationType.COGNITO,
         )
+
+        # --------------------------
+        # Deployment automatico del frontend + config.json
+        # --------------------------
+        import json
+        config_data = {
+            "cognitoDomain": f"{domain.domain_name}.auth.eu-west-3.amazoncognito.com",
+            "clientId": user_pool_client.user_pool_client_id,
+            "redirectUri": f"https://{distribution.attr_domain_name}/callback",
+            "logoutRedirect": f"https://{distribution.attr_domain_name}",
+            "apiBaseUrl": api.url  # ✅ ora api è definito
+        }
+
+        s3deploy.BucketDeployment(
+            self, "DeployFrontendAndConfig",
+            sources=[
+                s3deploy.Source.asset("../rate-your-music-app/dist"),
+                s3deploy.Source.data("config.json", json.dumps(config_data))
+            ],
+            destination_bucket=website_bucket,
+            distribution=distribution,
+            distribution_paths=["/*"],
+        )
+
         # Output (così vedi l’URL finale dopo il deploy)
         from aws_cdk import CfnOutput
         CfnOutput(self, "CloudFrontURL", value=distribution.attr_domain_name)
-

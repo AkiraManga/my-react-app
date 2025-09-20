@@ -1,57 +1,53 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 function Callback() {
   const { search } = useLocation();
   const navigate = useNavigate();
+  const [config, setConfig] = useState(null);
 
+  // 1. Carica config.json all'avvio
   useEffect(() => {
-    const params = new URLSearchParams(search);
-    const code = params.get("code");
+    fetch("/config.json")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("✅ Config caricata:", data);
+        setConfig(data);
+      })
+      .catch((err) => console.error("❌ Errore caricando config.json:", err));
+  }, []);
 
-    if (code) {
+  // 2. Quando config è disponibile, processa il codice
+  useEffect(() => {
+    const code = new URLSearchParams(search).get("code");
+    if (code && config?.apiBaseUrl) {
       console.log("✅ Codice ricevuto:", code);
 
-      fetch(
-        `https://jyqw4r3nck.execute-api.eu-west-3.amazonaws.com/prod/auth/callback?code=${code}`
-      )
+      fetch(`${config.apiBaseUrl}auth/callback?code=${code}`)
         .then(async (res) => {
           console.log("📡 Status risposta:", res.status);
-
           const text = await res.text();
           console.log("📦 Risposta raw:", text);
 
           try {
-            const json = JSON.parse(text);
-            return json;
-          } catch (e) {
-            console.error("❌ Errore parse JSON:", e);
-            return {};
-          }
-        })
-        .then((tokens) => {
-          console.log("🔑 Tokens ricevuti:", tokens);
+            const data = JSON.parse(text);
+            sessionStorage.setItem("id_token", data.id_token);
+            sessionStorage.setItem("access_token", data.access_token);
+            sessionStorage.setItem("refresh_token", data.refresh_token);
 
-          if (tokens.access_token) {
-            sessionStorage.setItem("access_token", tokens.access_token);
-            if (tokens.id_token) {
-              sessionStorage.setItem("id_token", tokens.id_token);
-            }
-            if (tokens.refresh_token) {
-              sessionStorage.setItem("refresh_token", tokens.refresh_token);
-            }
+            console.log("✅ Token salvati in sessionStorage");
 
+            // 🔔 avvisa Header.jsx che lo stato è cambiato
             window.dispatchEvent(new Event("storage"));
-            //navigate("/");
-          } else {
-            console.error("⚠️ Errore: Nessun access_token ricevuto", tokens);
+
+            navigate("/");
+          } catch (err) {
+            console.error("❌ Errore parse JSON:", err);
           }
         })
-        .catch((err) => console.error("🔥 Errore fetch:", err));
-    } else {
-      console.warn("⚠️ Nessun codice trovato nell'URL");
+        .catch((err) => console.error("❌ Errore fetch:", err));
     }
-  }, [search, navigate]);
+  }, [config, search, navigate]);
 
   return <div>Login in corso...</div>;
 }
