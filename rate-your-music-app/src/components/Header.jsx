@@ -5,10 +5,11 @@ import '../styles/Header.css';
 const Header = () => {
   const clientId = "351b8dq8eqn48qcqo23o5kio15";
   const domain = "https://rateyourmusic101.auth.eu-west-3.amazoncognito.com";
-  const redirectUri = "http://localhost:5173/callback";
-  const logoutRedirect = "http://localhost:5173";
+  const redirectUri = "https://dfxq4ov956y7j.cloudfront.net/callback";
+  const logoutRedirect = "https://dfxq4ov956y7j.cloudfront.net";
   const responseType = "code";
-  const scope = "openid profile email";
+  // 👇 identico al link che funziona, NIENTE encode su questa variabile
+  const scope = "email+openid+profile";
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [search, setSearch] = useState("");
@@ -28,22 +29,23 @@ const Header = () => {
   }, []);
 
   const handleLogin = () => {
-    const loginUrl = `${domain}/login?client_id=${clientId}&response_type=${responseType}&scope=${encodeURIComponent(
-      scope
-    )}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const loginUrl =
+      `${domain}/login?client_id=${clientId}` +
+      `&response_type=${responseType}` +
+      `&scope=${scope}` + // <-- non encodare
+      `&redirect_uri=${encodeURIComponent(redirectUri)}`; // <-- questo sì
+
+    console.log("🔗 Login URL generato:", loginUrl);
     window.location.href = loginUrl;
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem("id_token");
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("refresh_token");
+    // logout Cognito richiede logout_uri
+    const logoutUrl =
+      `${domain}/logout?client_id=${clientId}` +
+      `&logout_uri=${encodeURIComponent(logoutRedirect)}`;
 
-    setIsLoggedIn(false);
-
-    const logoutUrl = `${domain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(
-      logoutRedirect
-    )}`;
+    console.log("🔗 Logout URL generato:", logoutUrl);
     window.location.href = logoutUrl;
   };
 

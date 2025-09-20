@@ -146,10 +146,11 @@ class CdkStack(Stack):
                     cognito.OAuthScope.EMAIL,
                     cognito.OAuthScope.PROFILE,
                 ],
-                callback_urls=["http://localhost:5173/callback"],
-                logout_urls=["http://localhost:5173"],
+                callback_urls=[f"https://{distribution.attr_domain_name}/callback"],  # ✅ URL CloudFront
+                logout_urls=[f"https://{distribution.attr_domain_name}"],             # ✅ URL CloudFront
             ),
         )
+
 
         domain = user_pool.add_domain(
             "RateYourMusicDomain",
@@ -215,7 +216,7 @@ class CdkStack(Stack):
             environment={
                 "COGNITO_DOMAIN": f"{domain.domain_name}.auth.eu-west-3.amazoncognito.com",
                 "COGNITO_CLIENT_ID": user_pool_client.user_pool_client_id,
-                "REDIRECT_URI": "http://localhost:5173/callback"  # poi sostituirai col dominio reale
+                "REDIRECT_URI": "https://dfxq4ov956y7j.cloudfront.net/callback"  # poi sostituirai col dominio reale
             },
             timeout=Duration.seconds(30),
             memory_size=512,
