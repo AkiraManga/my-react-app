@@ -33,14 +33,13 @@ const Header = () => {
       `${domain}/login?client_id=${clientId}` +
       `&response_type=${responseType}` +
       `&scope=${scope}` + // <-- non encodare
-      `&redirect_uri=${encodeURIComponent(redirectUri)}`; // <-- questo sì
+      `&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
     console.log("🔗 Login URL generato:", loginUrl);
     window.location.href = loginUrl;
   };
 
   const handleLogout = () => {
-    // logout Cognito richiede logout_uri
     const logoutUrl =
       `${domain}/logout?client_id=${clientId}` +
       `&logout_uri=${encodeURIComponent(logoutRedirect)}`;
@@ -52,7 +51,6 @@ const Header = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (search.trim()) {
-      // Trasforma il testo in un id leggibile per l’URL
       const id = search.toLowerCase().replace(/\s+/g, "-");
       navigate(`/album/${id}`);
       setSearch("");
@@ -62,7 +60,7 @@ const Header = () => {
   return (
     <header className="main-header">
       <div className="search-container">
-        <form onSubmit={handleSearch}>
+        <form onSubmit={handleSearch} onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}>
           <input
             type="text"
             placeholder="Cerca album..."
@@ -74,9 +72,21 @@ const Header = () => {
       </div>
       <div className="login-container">
         {!isLoggedIn ? (
-          <button className="login-button" onClick={handleLogin}>Login</button>
+          <button
+            type="button"             // ✅ evita submit del form
+            className="login-button"
+            onClick={handleLogin}
+          >
+            Login
+          </button>
         ) : (
-          <button className="logout-button" onClick={handleLogout}>Logout</button>
+          <button
+            type="button"             // ✅ evita submit del form
+            className="logout-button"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
         )}
       </div>
     </header>
