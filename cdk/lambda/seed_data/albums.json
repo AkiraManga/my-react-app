@@ -1,0 +1,229 @@
+{
+  "Albums": [
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a001" },
+          "title": { "S": "Random Access Memories" },
+          "artist": { "S": "Daft Punk" },
+          "cover": { "S": "https://www.lafeltrinelli.it/images/0888837168618_0_0_0_0_0.jpg" },
+          "songs": { "L": [ { "S": "Give Life Back to Music" }, { "S": "Get Lucky" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "2013" },
+          "genre": { "S": "Electronic" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a002" },
+          "title": { "S": "OK Computer" },
+          "artist": { "S": "Radiohead" },
+          "cover": { "S": "https://cdn-images.dzcdn.net/images/cover/05a186e0a859a36f9cd51cdae2158fe1/0x1900-000000-80-0-0.jpg" },
+          "songs": { "L": [ { "S": "Paranoid Android" }, { "S": "No Surprises" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "1997" },
+          "genre": { "S": "Alternative Rock" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a003" },
+          "title": { "S": "The Dark Side of the Moon" },
+          "artist": { "S": "Pink Floyd" },
+          "cover": { "S": "https://legendarycover.it/wp-content/uploads/2019/06/thedarksideofthemoon-e1559419433695.jpg" },
+          "songs": { "L": [ { "S": "Time" }, { "S": "Money" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "1973" },
+          "genre": { "S": "Progressive Rock" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a004" },
+          "title": { "S": "Abbey Road" },
+          "artist": { "S": "The Beatles" },
+          "cover": { "S": "https://media.gqitalia.it/photos/5d4c56731c0b03000814b25a/4:3/w_2951,h_2213,c_limit/IPA_IPA1077346.jpg" },
+          "songs": { "L": [ { "S": "Come Together" }, { "S": "Here Comes the Sun" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "1969" },
+          "genre": { "S": "Rock" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a005" },
+          "title": { "S": "Nevermind" },
+          "artist": { "S": "Nirvana" },
+          "cover": { "S": "https://www.ibs.it/images/0602527779089_0_0_0_0_0.jpg" },
+          "songs": { "L": [ { "S": "Smells Like Teen Spirit" }, { "S": "Come As You Are" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "1991" },
+          "genre": { "S": "Grunge" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a006" },
+          "title": { "S": "Thriller" },
+          "artist": { "S": "Michael Jackson" },
+          "cover": { "S": "https://m.media-amazon.com/images/I/81ogsUqshzL.jpg" },
+          "songs": { "L": [ { "S": "Thriller" }, { "S": "Billie Jean" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "1982" },
+          "genre": { "S": "Pop" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a007" },
+          "title": { "S": "Back in Black" },
+          "artist": { "S": "AC/DC" },
+          "cover": { "S": "https://upload.wikimedia.org/wikipedia/commons/9/92/ACDC_Back_in_Black.png" },
+          "songs": { "L": [ { "S": "Hells Bells" }, { "S": "Back in Black" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "1980" },
+          "genre": { "S": "Hard Rock" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a008" },
+          "title": { "S": "To Pimp a Butterfly" },
+          "artist": { "S": "Kendrick Lamar" },
+          "cover": { "S": "https://m.media-amazon.com/images/I/81015y0a1hL._UF894,1000_QL80_.jpg" },
+          "songs": { "L": [ { "S": "Alright" }, { "S": "King Kunta" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "2015" },
+          "genre": { "S": "Hip Hop" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a009" },
+          "title": { "S": "The Wall" },
+          "artist": { "S": "Pink Floyd" },
+          "cover": { "S": "https://m.media-amazon.com/images/I/71jxpq0Lk5L._UF894,1000_QL80_.jpg" },
+          "songs": { "L": [ { "S": "Another Brick in the Wall" }, { "S": "Comfortably Numb" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "1979" },
+          "genre": { "S": "Progressive Rock" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a010" },
+          "title": { "S": "Hotel California" },
+          "artist": { "S": "Eagles" },
+          "cover": { "S": "https://m.media-amazon.com/images/I/91eh6ApLnzL._UF894,1000_QL80_.jpg" },
+          "songs": { "L": [ { "S": "Hotel California" }, { "S": "New Kid in Town" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "1976" },
+          "genre": { "S": "Rock" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a011" },
+          "title": { "S": "Born to Run" },
+          "artist": { "S": "Bruce Springsteen" },
+          "cover": { "S": "https://m.media-amazon.com/images/I/8127ICDt45L._UF894,1000_QL80_.jpg" },
+          "songs": { "L": [ { "S": "Born to Run" }, { "S": "Thunder Road" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "1975" },
+          "genre": { "S": "Rock" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a012" },
+          "title": { "S": "Good Kid, M.A.A.D City" },
+          "artist": { "S": "Kendrick Lamar" },
+          "cover": { "S": "https://images.genius.com/b4d6d87f080c362200ce55ed35ec65bb.1000x1000x1.png" },
+          "songs": { "L": [ { "S": "Bitch, Don’t Kill My Vibe" }, { "S": "Swimming Pools" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "2012" },
+          "genre": { "S": "Hip Hop" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a013" },
+          "title": { "S": "Rumours" },
+          "artist": { "S": "Fleetwood Mac" },
+          "cover": { "S": "https://shop.warnermusic.it/cdn/shop/files/603497816156.jpg?v=1742912072" },
+          "songs": { "L": [ { "S": "Dreams" }, { "S": "Go Your Own Way" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "1977" },
+          "genre": { "S": "Rock" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a014" },
+          "title": { "S": "The College Dropout" },
+          "artist": { "S": "Kanye West" },
+          "cover": { "S": "https://m.media-amazon.com/images/I/91CDaas05ZL.jpg" },
+          "songs": { "L": [ { "S": "All Falls Down" }, { "S": "Jesus Walks" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "2004" },
+          "genre": { "S": "Hip Hop" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "album_id": { "S": "a015" },
+          "title": { "S": "Led Zeppelin IV" },
+          "artist": { "S": "Led Zeppelin" },
+          "cover": { "S": "https://m.media-amazon.com/images/I/81x364UAGAL.jpg" },
+          "songs": { "L": [ { "S": "Stairway to Heaven" }, { "S": "Black Dog" } ] },
+          "average_rating": { "N": "0" },
+          "ratings_count": { "N": "0" },
+          "year": { "N": "1971" },
+          "genre": { "S": "Hard Rock" }
+        }
+      }
+    }
+  ]
+}

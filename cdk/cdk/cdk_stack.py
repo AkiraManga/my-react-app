@@ -55,14 +55,16 @@ class CdkStack(Stack):
             distribution_config=cloudfront.CfnDistribution.DistributionConfigProperty(
                 enabled=True,
                 default_root_object="index.html",
-                origins=[cloudfront.CfnDistribution.OriginProperty(
-                    id="S3Origin",
-                    domain_name=website_bucket.bucket_regional_domain_name,
-                    s3_origin_config=cloudfront.CfnDistribution.S3OriginConfigProperty(
-                        origin_access_identity=""  # ⚠️ vuoto → NO OAI
-                    ),
-                    origin_access_control_id=oac.get_att("Id").to_string()
-                )],
+                origins=[
+                    cloudfront.CfnDistribution.OriginProperty(
+                        id="S3Origin",
+                        domain_name=website_bucket.bucket_regional_domain_name,
+                        s3_origin_config=cloudfront.CfnDistribution.S3OriginConfigProperty(
+                            origin_access_identity=""  # vuoto perché usi OAC
+                        ),
+                        origin_access_control_id=oac.get_att("Id").to_string()
+                    )
+                ],
                 default_cache_behavior=cloudfront.CfnDistribution.DefaultCacheBehaviorProperty(
                     target_origin_id="S3Origin",
                     viewer_protocol_policy="redirect-to-https",
@@ -77,16 +79,17 @@ class CdkStack(Stack):
                     cloudfront.CfnDistribution.CustomErrorResponseProperty(
                         error_code=403,
                         response_code=200,
-                        response_page_path="/index.html",
+                        response_page_path="/index.html"
                     ),
                     cloudfront.CfnDistribution.CustomErrorResponseProperty(
                         error_code=404,
                         response_code=200,
-                        response_page_path="/index.html",
+                        response_page_path="/index.html"
                     )
                 ]
             )
         )
+
 
         # --------------------------
         # Bucket Policy per permettere a CloudFront di leggere dal bucket
@@ -172,14 +175,22 @@ class CdkStack(Stack):
         )
 
         # --------------------------
+        # Lambda per leggere album (SOLO Docker)
+        # --------------------------
+        get_albums_fn = _lambda.DockerImageFunction(
+            self, "GetAlbumsLambda",
+            code=_lambda.DockerImageCode.from_image_asset("lambda/albums"),
+            environment={
+                "ALBUMS_TABLE": albums_table.table_name
+            },
+            timeout=Duration.seconds(30),
+            memory_size=512,
+        )
+        albums_table.grant_read_data(get_albums_fn)
+
+        # --------------------------
         # Lambda Functions (Docker)
         # --------------------------
-        albums_fn = _lambda.DockerImageFunction(
-            self, "AlbumsLambda",
-            code=_lambda.DockerImageCode.from_image_asset("lambda/albums"),
-        )
-        albums_table.grant_read_data(albums_fn)
-
         vote_fn = _lambda.DockerImageFunction(
             self, "VoteLambda",
             code=_lambda.DockerImageCode.from_image_asset("lambda/vote"),
@@ -209,6 +220,37 @@ class CdkStack(Stack):
         )
 
         # --------------------------
+        # Lambda per popolare DynamoDB con seed iniziale
+        # --------------------------
+        seed_data_fn = _lambda.DockerImageFunction(
+            self, "SeedDataLambda",
+            code=_lambda.DockerImageCode.from_image_asset("lambda/seed_data"),
+            environment={
+                "ALBUMS_TABLE": albums_table.table_name,
+                "USERS_TABLE": users_table.table_name,
+                "RATINGS_TABLE": ratings_table.table_name,
+            },
+            timeout=Duration.minutes(2),
+            memory_size=512,
+        )
+        albums_table.grant_write_data(seed_data_fn)
+        users_table.grant_write_data(seed_data_fn)
+        ratings_table.grant_write_data(seed_data_fn)
+
+        # Lambda PostConfirmation
+        post_confirmation_fn = _lambda.Function(
+            self, "PostConfirmationLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            handler="index.handler",
+            code=_lambda.Code.from_asset("lambda/post_confirmation"),
+            environment={
+                "USERS_TABLE": users_table.table_name
+            }
+        )
+        users_table.grant_write_data(post_confirmation_fn)
+        user_pool.add_trigger(cognito.UserPoolOperation.POST_CONFIRMATION, post_confirmation_fn)
+
+        # --------------------------
         # SQS Queue
         # --------------------------
         queue = sqs.Queue(
@@ -216,9 +258,7 @@ class CdkStack(Stack):
             visibility_timeout=Duration.seconds(30)
         )
 
-        # --------------------------
-        # Producer Lambda (invia messaggi a SQS)
-        # --------------------------
+        # Producer Lambda
         producer_fn = _lambda.DockerImageFunction(
             self, "ProducerLambda",
             code=_lambda.DockerImageCode.from_image_asset("lambda/producer"),
@@ -230,9 +270,7 @@ class CdkStack(Stack):
         )
         queue.grant_send_messages(producer_fn)
 
-        # --------------------------
-        # Consumer Lambda (consuma messaggi da SQS)
-        # --------------------------
+        # Consumer Lambda
         consumer_fn = _lambda.DockerImageFunction(
             self, "ConsumerLambda",
             code=_lambda.DockerImageCode.from_image_asset("lambda/consumer"),
@@ -253,8 +291,23 @@ class CdkStack(Stack):
             self, "RateYourMusicApi",
             rest_api_name="RateYourMusicApi",
             deploy_options=apigw.StageOptions(stage_name="prod"),
+            default_cors_preflight_options=apigw.CorsOptions(
+                allow_origins=["*"],  # oppure [f"https://{distribution.attr_domain_name}"]
+                allow_methods=["GET", "POST", "OPTIONS"],
+                allow_headers=["Content-Type", "Authorization"],
+            )
         )
 
+        # Endpoint GET /albums e /albums/{id} (pubblico)
+        albums_resource = api.root.add_resource("albums")
+        albums_resource.add_method("GET", apigw.LambdaIntegration(get_albums_fn))
+        album_resource = albums_resource.add_resource("{id}")
+        album_resource.add_method("GET", apigw.LambdaIntegration(get_albums_fn))
+        # ✅ Nuovo endpoint GET /albums/by-title/{title}
+        album_by_title = albums_resource.add_resource("by-title").add_resource("{title}")
+        album_by_title.add_method("GET", apigw.LambdaIntegration(get_albums_fn))
+
+        # Producer
         producer_resource = api.root.add_resource("producer")
         producer_resource.add_method("POST", apigw.LambdaIntegration(producer_fn))
 
@@ -263,13 +316,7 @@ class CdkStack(Stack):
         auth_callback = auth_resource.add_resource("callback")
         auth_callback.add_method("GET", apigw.LambdaIntegration(auth_fn))
 
-        api.root.add_resource("albums").add_method(
-            "GET",
-            apigw.LambdaIntegration(albums_fn),
-            authorizer=authorizer,
-            authorization_type=apigw.AuthorizationType.COGNITO,
-        )
-
+        # Vote (protetto)
         api.root.add_resource("vote").add_method(
             "POST",
             apigw.LambdaIntegration(vote_fn),
@@ -277,6 +324,7 @@ class CdkStack(Stack):
             authorization_type=apigw.AuthorizationType.COGNITO,
         )
 
+        # Favorites (protetto)
         api.root.add_resource("favorites").add_method(
             "POST",
             apigw.LambdaIntegration(favorites_fn),
@@ -293,7 +341,7 @@ class CdkStack(Stack):
             "clientId": user_pool_client.user_pool_client_id,
             "redirectUri": f"https://{distribution.attr_domain_name}/callback",
             "logoutRedirect": f"https://{distribution.attr_domain_name}",
-            "apiBaseUrl": api.url  # ✅ ora api è definito
+            "apiBaseUrl": api.url
         }
 
         s3deploy.BucketDeployment(
@@ -307,6 +355,5 @@ class CdkStack(Stack):
             distribution_paths=["/*"],
         )
 
-        # Output (così vedi l’URL finale dopo il deploy)
         from aws_cdk import CfnOutput
         CfnOutput(self, "CloudFrontURL", value=distribution.attr_domain_name)
