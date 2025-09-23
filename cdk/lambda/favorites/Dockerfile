@@ -1,7 +1,5 @@
-FROM public.ecr.aws/lambda/python:3.12
+FROM public.ecr.aws/lambda/python:3.11
 
-# Copia il file Python dentro il container
-COPY app.py ./
+COPY app.py ${LAMBDA_TASK_ROOT}
 
-# Definisce l'entrypoint (funzione handler dentro app.py)
 CMD ["app.handler"]

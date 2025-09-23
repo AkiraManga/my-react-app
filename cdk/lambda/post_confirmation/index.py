@@ -13,8 +13,8 @@ def handler(event, context):
         table.put_item(
             Item={
                 "user_id": user_id,
-                "email": email,
-                "favorites": []
+                "email": email
+                # ⚠️ niente favorites qui!
             },
             ConditionExpression="attribute_not_exists(user_id)"
         )

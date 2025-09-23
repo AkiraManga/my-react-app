@@ -2,39 +2,37 @@ import os
 import json
 import boto3
 from decimal import Decimal
-from boto3.dynamodb.conditions import Attr
 
 dynamodb = boto3.resource("dynamodb")
 albums_table = dynamodb.Table(os.environ["ALBUMS_TABLE"])
 
-# Conversione dei Decimal in float/int
 def decimal_default(obj):
     if isinstance(obj, Decimal):
         return float(obj)
     raise TypeError
 
-# Headers per CORS
 def cors_headers():
     return {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type,Authorization"
+        "Access-Control-Allow-Headers": "Content-Type,Authorization",
     }
 
 def handler(event, context):
     try:
         path = event.get("resource")
-        path_params = event.get("pathParameters", {})
+        path_params = event.get("pathParameters", {}) or {}
 
         # GET /albums/{id}
         if path == "/albums/{id}":
-            album_id = path_params.get("id")
+            album_id = path_params.get("id") or path_params.get("album_id")
             if not album_id:
                 return {
                     "statusCode": 400,
                     "headers": cors_headers(),
                     "body": json.dumps({"error": "Album ID mancante"})
                 }
+
             response = albums_table.get_item(Key={"album_id": album_id})
             item = response.get("Item")
             if not item:
@@ -49,7 +47,7 @@ def handler(event, context):
                 "body": json.dumps(item, default=decimal_default)
             }
 
-        # ✅ GET /albums/by-title/{title}
+        # GET /albums/by-title/{title}
         if path == "/albums/by-title/{title}":
             title = path_params.get("title")
             if not title:
@@ -59,8 +57,6 @@ def handler(event, context):
                     "body": json.dumps({"error": "Titolo mancante"})
                 }
 
-            # Scan case-insensitive
-            # DynamoDB non ha ILIKE → abbasso entrambi a lowercase
             response = albums_table.scan()
             items = response.get("Items", [])
             matched = [

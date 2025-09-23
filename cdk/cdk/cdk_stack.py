@@ -174,6 +174,26 @@ class CdkStack(Stack):
             removal_policy=RemovalPolicy.DESTROY,
         )
 
+
+        # --------------------------
+        # Lambda Ratings
+        # --------------------------
+        ratings_fn = _lambda.DockerImageFunction(
+            self, "RatingsLambda",
+            code=_lambda.DockerImageCode.from_image_asset("lambda/ratings"),
+            environment={
+                "RATINGS_TABLE": ratings_table.table_name
+            },
+            timeout=Duration.seconds(30),
+            memory_size=256,
+        )
+
+        ratings_table.grant_read_data(ratings_fn)
+
+
+
+
+
         # --------------------------
         # Lambda per leggere album (SOLO Docker)
         # --------------------------
@@ -201,8 +221,14 @@ class CdkStack(Stack):
         favorites_fn = _lambda.DockerImageFunction(
             self, "FavoritesLambda",
             code=_lambda.DockerImageCode.from_image_asset("lambda/favorites"),
+            environment={              # 👈 aggiunto
+                "USERS_TABLE": users_table.table_name
+            },
+            timeout=Duration.seconds(30),   # (facoltativo: aggiungi timeout e memoria)
+            memory_size=256,
         )
         users_table.grant_read_write_data(favorites_fn)
+
 
         # --------------------------
         # Auth Callback Lambda
@@ -306,6 +332,49 @@ class CdkStack(Stack):
         # ✅ Nuovo endpoint GET /albums/by-title/{title}
         album_by_title = albums_resource.add_resource("by-title").add_resource("{title}")
         album_by_title.add_method("GET", apigw.LambdaIntegration(get_albums_fn))
+
+
+        # /ratings
+        ratings_resource = api.root.add_resource("ratings")
+        # /ratings/{album_id}
+        ratings_id = ratings_resource.add_resource("{album_id}")
+
+        ratings_id.add_method(
+            "GET",
+            apigw.LambdaIntegration(ratings_fn)
+        )
+        ratings_id.add_method(
+            "POST",
+            apigw.LambdaIntegration(ratings_fn),
+            authorizer=authorizer,
+            authorization_type=apigw.AuthorizationType.COGNITO,
+        )
+
+
+
+
+
+        # /users/favorites/{album_id}
+        users_resource = api.root.add_resource("users")
+
+        # aggiungo CORS al livello di /users/favorites
+        favorites_resource = users_resource.add_resource(
+            "favorites",
+            default_cors_preflight_options=apigw.CorsOptions(
+                allow_origins=["*"],   # meglio: [f"https://{distribution.attr_domain_name}"]
+                allow_methods=["OPTIONS", "POST"],
+                allow_headers=["Content-Type", "Authorization"],
+            )
+        )
+
+        fav_id = favorites_resource.add_resource("{album_id}")
+        fav_id.add_method(
+            "POST",
+            apigw.LambdaIntegration(favorites_fn),
+            authorizer=authorizer,
+            authorization_type=apigw.AuthorizationType.COGNITO,
+        )
+
 
         # Producer
         producer_resource = api.root.add_resource("producer")

@@ -1,46 +1,21 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "../styles/Navbar.css";
+import { useNavigate, Link } from "react-router-dom";
+import "./styles/Navbar.css";
 
-function Navbar() {
+export default function Navbar() {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const trimmed = query.trim();
-    if (!trimmed) return;
+    if (!query.trim()) return;
 
-    try {
-      const configResp = await fetch("/config.json");
-      const config = await configResp.json();
-
-      // Caso 1: album_id tipo "a001"
-      if (/^a\d+$/i.test(trimmed)) {
-        navigate(`/album/${trimmed.toLowerCase()}`);
-      } else {
-        // Caso 2: ricerca per titolo
-        const resp = await fetch(
-          `${config.apiBaseUrl}albums/by-title/${encodeURIComponent(trimmed)}`
-        );
-
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.length === 1) {
-            // Album unico trovato → redirect diretto
-            navigate(`/album/${data[0].album_id}`);
-          } else {
-            // Nessun risultato o più risultati → pagina di ricerca
-            navigate(`/search/${encodeURIComponent(trimmed)}`);
-          }
-        } else {
-          // fallback
-          navigate(`/search/${encodeURIComponent(trimmed)}`);
-        }
-      }
-    } catch (err) {
-      console.error("Errore ricerca:", err);
-      navigate(`/search/${encodeURIComponent(trimmed)}`);
+    if (query.startsWith("a")) {
+      // cerca per ID album
+      navigate(`/album/${query}`);
+    } else {
+      // cerca per titolo
+      navigate(`/search/${query}`);
     }
 
     setQuery("");
@@ -48,16 +23,29 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Cerca album per titolo, artista o codice..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </form>
+      {/* Sinistra */}
+      <div className="left-container">
+        <Link to="/" className="nav-btn">Home</Link>
+      </div>
+
+      {/* Centro: barra di ricerca */}
+      <div className="center-container">
+        <form onSubmit={handleSubmit} style={{ width: "100%" }}>
+          <input
+            type="text"
+            placeholder="Cerca album..."
+            className="search-input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </form>
+      </div>
+
+      {/* Destra */}
+      <div className="right-container">
+        <Link to="/profile" className="nav-btn">Profilo</Link>
+        <button className="nav-btn">Login</button>
+      </div>
     </nav>
   );
 }
-
-export default Navbar;

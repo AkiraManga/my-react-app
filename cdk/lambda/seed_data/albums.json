@@ -4,7 +4,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a001" },
-          "title": { "S": "Random Access Memories" },
+          "title": { "S": "Random-Access-Memories" },
           "artist": { "S": "Daft Punk" },
           "cover": { "S": "https://www.lafeltrinelli.it/images/0888837168618_0_0_0_0_0.jpg" },
           "songs": { "L": [ { "S": "Give Life Back to Music" }, { "S": "Get Lucky" } ] },
@@ -19,7 +19,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a002" },
-          "title": { "S": "OK Computer" },
+          "title": { "S": "OK-Computer" },
           "artist": { "S": "Radiohead" },
           "cover": { "S": "https://cdn-images.dzcdn.net/images/cover/05a186e0a859a36f9cd51cdae2158fe1/0x1900-000000-80-0-0.jpg" },
           "songs": { "L": [ { "S": "Paranoid Android" }, { "S": "No Surprises" } ] },
@@ -34,7 +34,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a003" },
-          "title": { "S": "The Dark Side of the Moon" },
+          "title": { "S": "The-Dark-Side-of-the-Moon" },
           "artist": { "S": "Pink Floyd" },
           "cover": { "S": "https://legendarycover.it/wp-content/uploads/2019/06/thedarksideofthemoon-e1559419433695.jpg" },
           "songs": { "L": [ { "S": "Time" }, { "S": "Money" } ] },
@@ -49,7 +49,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a004" },
-          "title": { "S": "Abbey Road" },
+          "title": { "S": "Abbey-Road" },
           "artist": { "S": "The Beatles" },
           "cover": { "S": "https://media.gqitalia.it/photos/5d4c56731c0b03000814b25a/4:3/w_2951,h_2213,c_limit/IPA_IPA1077346.jpg" },
           "songs": { "L": [ { "S": "Come Together" }, { "S": "Here Comes the Sun" } ] },
@@ -94,7 +94,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a007" },
-          "title": { "S": "Back in Black" },
+          "title": { "S": "Back-in-Black" },
           "artist": { "S": "AC/DC" },
           "cover": { "S": "https://upload.wikimedia.org/wikipedia/commons/9/92/ACDC_Back_in_Black.png" },
           "songs": { "L": [ { "S": "Hells Bells" }, { "S": "Back in Black" } ] },
@@ -109,7 +109,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a008" },
-          "title": { "S": "To Pimp a Butterfly" },
+          "title": { "S": "To-Pimp-a-Butterfly" },
           "artist": { "S": "Kendrick Lamar" },
           "cover": { "S": "https://m.media-amazon.com/images/I/81015y0a1hL._UF894,1000_QL80_.jpg" },
           "songs": { "L": [ { "S": "Alright" }, { "S": "King Kunta" } ] },
@@ -124,7 +124,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a009" },
-          "title": { "S": "The Wall" },
+          "title": { "S": "The-Wall" },
           "artist": { "S": "Pink Floyd" },
           "cover": { "S": "https://m.media-amazon.com/images/I/71jxpq0Lk5L._UF894,1000_QL80_.jpg" },
           "songs": { "L": [ { "S": "Another Brick in the Wall" }, { "S": "Comfortably Numb" } ] },
@@ -139,7 +139,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a010" },
-          "title": { "S": "Hotel California" },
+          "title": { "S": "Hotel-California" },
           "artist": { "S": "Eagles" },
           "cover": { "S": "https://m.media-amazon.com/images/I/91eh6ApLnzL._UF894,1000_QL80_.jpg" },
           "songs": { "L": [ { "S": "Hotel California" }, { "S": "New Kid in Town" } ] },
@@ -154,7 +154,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a011" },
-          "title": { "S": "Born to Run" },
+          "title": { "S": "Born-to-Run" },
           "artist": { "S": "Bruce Springsteen" },
           "cover": { "S": "https://m.media-amazon.com/images/I/8127ICDt45L._UF894,1000_QL80_.jpg" },
           "songs": { "L": [ { "S": "Born to Run" }, { "S": "Thunder Road" } ] },
@@ -169,7 +169,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a012" },
-          "title": { "S": "Good Kid, M.A.A.D City" },
+          "title": { "S": "Good-Kid,-M.A.A.D-City" },
           "artist": { "S": "Kendrick Lamar" },
           "cover": { "S": "https://images.genius.com/b4d6d87f080c362200ce55ed35ec65bb.1000x1000x1.png" },
           "songs": { "L": [ { "S": "Bitch, Don’t Kill My Vibe" }, { "S": "Swimming Pools" } ] },
@@ -199,7 +199,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a014" },
-          "title": { "S": "The College Dropout" },
+          "title": { "S": "The-College-Dropout" },
           "artist": { "S": "Kanye West" },
           "cover": { "S": "https://m.media-amazon.com/images/I/91CDaas05ZL.jpg" },
           "songs": { "L": [ { "S": "All Falls Down" }, { "S": "Jesus Walks" } ] },
@@ -214,7 +214,7 @@
       "PutRequest": {
         "Item": {
           "album_id": { "S": "a015" },
-          "title": { "S": "Led Zeppelin IV" },
+          "title": { "S": "Led-Zeppelin-IV" },
           "artist": { "S": "Led Zeppelin" },
           "cover": { "S": "https://m.media-amazon.com/images/I/81x364UAGAL.jpg" },
           "songs": { "L": [ { "S": "Stairway to Heaven" }, { "S": "Black Dog" } ] },

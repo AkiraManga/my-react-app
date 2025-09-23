@@ -49,3 +49,15 @@
 .tracklist li {
   margin: 0.5rem 0;
 }
+.login-btn {
+  background: #f48c06;
+  color: white;
+  padding: 0.6em 1.2em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.login-btn:hover {
+  background: #e67c00; /* effetto hover */
+}

@@ -1,27 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 
-/* ---------------- immagini ---------------- */
-const imgs = [
-  'https://www.lafeltrinelli.it/images/0888837168618_0_0_0_0_0.jpg',
-  'https://i.scdn.co/image/ab67616d00001e022a64ebd96553453a516892ba',
-  'https://upload.wikimedia.org/wikipedia/commons/6/60/Charli_XCX_-_Brat_%28album_cover%29.png',
-  'https://m.media-amazon.com/images/I/71FM257lYjL._UF894,1000_QL80_.jpg',
-  'https://m.media-amazon.com/images/I/71EYmWxcmdL._UF894,1000_QL80_.jpg',
-  'https://www.musictraks.com/wp-content/uploads/2025/04/i-cani.jpg',
-  'https://m.media-amazon.com/images/I/618nkXxBxsL.jpg',
-  'https://www.lafeltrinelli.it/images/0602577230936_0_0_0_0_0.jpg',
-];
-
-/* ---------------- componente ---------------- */
 export default function Gallery3D() {
   const [locked, setLocked] = useState(false);
+  const [imgs, setImgs] = useState([]);
 
-  /* clic sul cilindro → toggle blocco */
+  // toggle blocco rotazione
   const handleToggleLock = () => setLocked((prev) => !prev);
+
+  // carico cover random da DynamoDB
+  useEffect(() => {
+    async function fetchCovers() {
+      try {
+        const configResp = await fetch("/config.json");
+        const config = await configResp.json();
+
+        // prendo tutti gli album
+        const resp = await fetch(`${config.apiBaseUrl}albums`);
+        if (!resp.ok) throw new Error("Errore API albums");
+
+        const data = await resp.json();
+
+        // mischiare gli album e prenderne 8
+        const shuffled = data.sort(() => 0.5 - Math.random());
+        const selected = shuffled.slice(0, 8);
+
+        // costruire lista URL cover
+        const covers = selected.map((album) =>
+          album.cover.startsWith("http")
+            ? album.cover
+            : `https://rate-your-music101.s3.eu-west-3.amazonaws.com/${album.cover}`
+        );
+
+        setImgs(covers);
+      } catch (err) {
+        console.error("Errore caricamento cover:", err);
+      }
+    }
+
+    fetchCovers();
+  }, []);
 
   return (
     <>
-      {/* ---------- stile incorporato ---------- */}
       <style>{`
         .gallery3d-wrapper {
           margin: 0;
@@ -34,20 +54,18 @@ export default function Gallery3D() {
 
         .gallery3d {
           position: relative;
-          width: 300px;
-          height: 200px;
+          width: 250px;   /* dimensione lato pannelli */
+          height: 250px;
           transform-style: preserve-3d;
           animation: gallery-rotate 35s linear infinite;
-          cursor: pointer;               /* indica che si può cliccare */
+          cursor: pointer;
         }
 
-        /* pausa quando passo il mouse */
         .gallery3d:hover { animation-play-state: paused; }
 
-        /* pausa permanente se bloccato */
         .gallery3d.locked {
           animation-play-state: paused;
-          cursor: grab;                  /* feedback “bloccato” */
+          cursor: grab;
         }
 
         @keyframes gallery-rotate {
@@ -60,7 +78,7 @@ export default function Gallery3D() {
           inset: 0;
           transform-origin: center;
           transform-style: preserve-3d;
-          transform: rotateY(calc(var(--i) * 45deg)) translateZ(380px);
+          transform: rotateY(calc(var(--i) * 45deg)) translateZ(500px);
         }
 
         .gallery3d span img {
@@ -68,20 +86,22 @@ export default function Gallery3D() {
           inset: 0;
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;     /* non taglia le immagini */
+          background: #000;        /* riempie lo sfondo */
+          border-radius: 8px;      /* opzionale */
+          box-shadow: 0 0 15px rgba(0,0,0,0.6); /* opzionale */
         }
       `}</style>
 
-      {/* ---------- markup ---------- */}
       <section className="gallery3d-wrapper">
         <div
-          className={`gallery3d${locked ? ' locked' : ''}`}
+          className={`gallery3d${locked ? " locked" : ""}`}
           onClick={handleToggleLock}
-          title={locked ? 'Clicca per sbloccare' : 'Clicca per bloccare'}
+          title={locked ? "Clicca per sbloccare" : "Clicca per bloccare"}
         >
           {imgs.map((url, idx) => (
-            <span key={idx} style={{ '--i': idx + 1 }}>
-              <img src={url} alt={`slide-${idx + 1}`} />
+            <span key={idx} style={{ "--i": idx + 1 }}>
+              <img src={url} alt={`cover-${idx + 1}`} />
             </span>
           ))}
         </div>

@@ -31,15 +31,15 @@ function Callback() {
 
           try {
             const data = JSON.parse(text);
-            sessionStorage.setItem("id_token", data.id_token);
-            sessionStorage.setItem("access_token", data.access_token);
-            sessionStorage.setItem("refresh_token", data.refresh_token);
 
-            console.log("✅ Token salvati in sessionStorage");
+            // 🔑 Salva i token in localStorage (non sessionStorage)
+            localStorage.setItem("id_token", data.id_token);
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("refresh_token", data.refresh_token);
 
-            // 🔔 avvisa Header.jsx che lo stato è cambiato
-            window.dispatchEvent(new Event("storage"));
+            console.log("✅ Token salvati in localStorage");
 
+            // Torna alla home
             navigate("/");
           } catch (err) {
             console.error("❌ Errore parse JSON:", err);

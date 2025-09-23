@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";   // 👈 aggiunto Link
 import '../styles/Header.css';
 
 const Header = () => {
@@ -19,13 +19,13 @@ const Header = () => {
       .catch(err => console.error("❌ Errore caricando config.json:", err));
   }, []);
 
-  // Stato login
+  // Stato login (usa localStorage)
   useEffect(() => {
-    const token = sessionStorage.getItem("id_token");
+    const token = localStorage.getItem("id_token");
     setIsLoggedIn(!!token);
 
     const handleStorageChange = () => {
-      const newToken = sessionStorage.getItem("id_token");
+      const newToken = localStorage.getItem("id_token");
       setIsLoggedIn(!!newToken);
     };
 
@@ -53,9 +53,9 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem("id_token");
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("refresh_token");
+    localStorage.removeItem("id_token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
 
     const logoutUrl =
       `https://${cognitoDomain}/logout?client_id=${clientId}` +
@@ -64,8 +64,6 @@ const Header = () => {
     console.log("🔗 Logout URL generato:", logoutUrl);
     window.location.href = logoutUrl;
   };
-
-
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -78,6 +76,13 @@ const Header = () => {
 
   return (
     <header className="main-header">
+      {/* 👇 Link a sinistra */}
+      <nav className="nav-links">
+        <Link to="/">Home</Link>
+        <Link to="/profile">Profilo</Link>
+      </nav>
+
+      {/* 👇 Barra di ricerca al centro */}
       <div className="search-container">
         <form onSubmit={handleSearch}>
           <input
@@ -89,6 +94,8 @@ const Header = () => {
           />
         </form>
       </div>
+
+      {/* 👇 Login/Logout a destra */}
       <div className="login-container">
         {!isLoggedIn ? (
           <button type="button" className="login-button" onClick={handleLogin}>
