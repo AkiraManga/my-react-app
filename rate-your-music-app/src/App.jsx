@@ -5,6 +5,7 @@ import Callback from "./Callback";
 import AlbumPage from "./components/AlbumPage";
 import SearchResults from "./components/SearchResults"; // <-- nuovo import
 import Profile from "./components/Profile";
+import ChartsPage from "./components/ChartsPage";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/album/:id" element={<AlbumPage />} /> {/* Pagina album */}
           <Route path="/search/:query" element={<SearchResults />} /> {/* Nuova pagina ricerca */}
           <Route path="/profile" element={<Profile />} />
+          <Route path="/charts" element={<ChartsPage />} />
 
         </Routes>
       </div>

@@ -20,9 +20,10 @@ function Callback() {
   // 2. Quando config è disponibile, processa il codice
   useEffect(() => {
     const code = new URLSearchParams(search).get("code");
-    if (code && config?.apiBaseUrl) {
+    if (code && config) {
       console.log("✅ Codice ricevuto:", code);
 
+      // Chiama la tua Lambda auth/callback
       fetch(`${config.apiBaseUrl}auth/callback?code=${code}`)
         .then(async (res) => {
           console.log("📡 Status risposta:", res.status);
@@ -32,15 +33,16 @@ function Callback() {
           try {
             const data = JSON.parse(text);
 
-            // 🔑 Salva i token in localStorage (non sessionStorage)
+            // 🔑 Salva i token in localStorage
             localStorage.setItem("id_token", data.id_token);
             localStorage.setItem("access_token", data.access_token);
             localStorage.setItem("refresh_token", data.refresh_token);
 
             console.log("✅ Token salvati in localStorage");
 
-            // Torna alla home
-            navigate("/");
+            // 🔄 redirect forzato → rimonta Header e mostra Logout
+            window.location.href = "/";
+            // se preferisci SPA senza full reload, usa navigate("/")
           } catch (err) {
             console.error("❌ Errore parse JSON:", err);
           }

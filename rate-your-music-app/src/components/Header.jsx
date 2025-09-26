@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from "react-router-dom";   // 👈 aggiunto Link
-import '../styles/Header.css';
+import React, { useEffect, useState } from "react";
+import { useNavigate, NavLink } from "react-router-dom";
+import "../styles/Header.css";
 
 const Header = () => {
   const [config, setConfig] = useState(null);
@@ -8,81 +8,108 @@ const Header = () => {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
 
-  // Carica config.json al montaggio
+  // ➜ carico il font "Material Symbols" direttamente qui (niente index.html)
+  useEffect(() => {
+    const LINK_ID = "material-symbols-outlined-link";
+    if (!document.getElementById(LINK_ID)) {
+      const link = document.createElement("link");
+      link.id = LINK_ID;
+      link.rel = "stylesheet";
+      link.href =
+        "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap";
+      document.head.appendChild(link);
+    }
+
+    // un piccolo style per la resa delle icone (se non vuoi toccare i CSS)
+    const STYLE_ID = "material-symbols-inline-style";
+    if (!document.getElementById(STYLE_ID)) {
+      const style = document.createElement("style");
+      style.id = STYLE_ID;
+      style.textContent = `
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 450, 'GRAD' 0, 'opsz' 24;
+          font-size: 22px;
+          line-height: 1;
+          vertical-align: middle;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
+  // Carica config.json
   useEffect(() => {
     fetch("/config.json")
-      .then(res => res.json())
-      .then(data => {
-        console.log("✅ Config caricata:", data);
-        setConfig(data);
-      })
-      .catch(err => console.error("❌ Errore caricando config.json:", err));
+      .then((res) => res.json())
+      .then((data) => setConfig(data))
+      .catch(() => setConfig(null));
   }, []);
 
-  // Stato login (usa localStorage)
+  // Controlla token in localStorage
   useEffect(() => {
-    const token = localStorage.getItem("id_token");
-    setIsLoggedIn(!!token);
-
-    const handleStorageChange = () => {
-      const newToken = localStorage.getItem("id_token");
-      setIsLoggedIn(!!newToken);
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    const checkToken = () => setIsLoggedIn(!!localStorage.getItem("id_token"));
+    checkToken();
+    const onStorage = () => checkToken();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  if (!config) {
-    return <div>Caricamento...</div>; // Evita errori prima che config arrivi
-  }
-
-  const { clientId, cognitoDomain, redirectUri, logoutRedirect } = config;
-  const scope = "email+openid+profile";
-  const responseType = "code";
-
-  const handleLogin = () => {
-    const loginUrl =
-      `https://${cognitoDomain}/login?client_id=${clientId}` +
-      `&response_type=${responseType}` +
-      `&scope=${scope}` + 
-      `&redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-    console.log("🔗 Login URL generato:", loginUrl);
-    window.location.href = loginUrl;
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("id_token");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-
-    const logoutUrl =
-      `https://${cognitoDomain}/logout?client_id=${clientId}` +
-      `&logout_uri=${encodeURIComponent(logoutRedirect)}`;
-
-    console.log("🔗 Logout URL generato:", logoutUrl);
-    window.location.href = logoutUrl;
-  };
+  const slugify = (s) =>
+    s
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-");
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (search.trim()) {
-      const id = search.toLowerCase().replace(/\s+/g, "-");
-      navigate(`/album/${id}`);
+      navigate(`/album/${slugify(search)}`);
       setSearch("");
     }
   };
 
+  const handleLogin = () => {
+    if (!config) return;
+    const { clientId, cognitoDomain, redirectUri } = config;
+    const scope = "email+openid+profile";
+    const responseType = "code";
+    const loginUrl =
+      `https://${cognitoDomain}/login?client_id=${clientId}` +
+      `&response_type=${responseType}&scope=${scope}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    window.location.href = loginUrl;
+  };
+
+  const handleLogout = () => {
+    if (!config) return;
+    localStorage.removeItem("id_token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    const { clientId, cognitoDomain, logoutRedirect } = config;
+    const logoutUrl =
+      `https://${cognitoDomain}/logout?client_id=${clientId}` +
+      `&logout_uri=${encodeURIComponent(logoutRedirect)}`;
+    window.location.href = logoutUrl;
+  };
+
   return (
     <header className="main-header">
-      {/* 👇 Link a sinistra */}
+      {/* SINISTRA: Home + Classifica (niente profilo) */}
       <nav className="nav-links">
-        <Link to="/">Home</Link>
-        <Link to="/profile">Profilo</Link>
+        <NavLink to="/" end className="nav-link">
+          <span className="material-symbols-outlined">home</span>
+          <span className="nav-label">Home</span>
+        </NavLink>
+        <NavLink to="/charts" className="nav-link">
+          <span className="material-symbols-outlined">leaderboard</span>
+          <span className="nav-label">Classifica</span>
+        </NavLink>
       </nav>
 
-      {/* 👇 Barra di ricerca al centro */}
+      {/* CENTRO: Search */}
       <div className="search-container">
         <form onSubmit={handleSearch}>
           <input
@@ -95,14 +122,24 @@ const Header = () => {
         </form>
       </div>
 
-      {/* 👇 Login/Logout a destra */}
+      {/* DESTRA: Login/Logout */}
       <div className="login-container">
         {!isLoggedIn ? (
-          <button type="button" className="login-button" onClick={handleLogin}>
+          <button
+            type="button"
+            className="login-button"
+            onClick={handleLogin}
+            disabled={!config}
+          >
             Login
           </button>
         ) : (
-          <button type="button" className="logout-button" onClick={handleLogout}>
+          <button
+            type="button"
+            className="logout-button"
+            onClick={handleLogout}
+            disabled={!config}
+          >
             Logout
           </button>
         )}

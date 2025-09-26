@@ -11,3 +11,4 @@ body{
 
 /* se in futuro volessi tornare alle scroll‑animations natie */
 @keyframes scrollRotate { to { --k: 1; } }
+

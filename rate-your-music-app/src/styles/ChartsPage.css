@@ -1,0 +1,99 @@
+/* === Page === */
+.charts-page {
+  background-color: #0d1117;
+  color: #fff;
+  min-height: 100vh;
+  padding: 6rem 1.5rem 3rem;
+  font-family: "Inter", "Helvetica", sans-serif;
+}
+.charts-container { max-width: 980px; margin: 0 auto; }
+.charts-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.charts-header h1 { font-size: 2rem; font-weight: 700; }
+
+/* === Year bar === */
+.year-bar-wrapper {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: .5rem;
+  margin: 0 0 1rem;
+}
+.year-arrow {
+  background: #1f2937;
+  color: #e5e7eb;
+  border: 1px solid #374151;
+  width: 28px; height: 28px; border-radius: 6px;
+  cursor: pointer;
+}
+.year-arrow:hover { background:#111827; }
+.year-bar {
+  overflow: auto hidden;
+  display: flex;
+  gap: .45rem;
+  scrollbar-width: thin;
+  padding: .25rem;
+}
+.year-bar::-webkit-scrollbar { height: 8px; }
+.year-bar::-webkit-scrollbar-thumb { background:#30363d; border-radius: 6px; }
+
+.year-btn {
+  position: relative;
+  box-sizing: border-box;
+
+  /* 👇 importante per non tagliare il numero */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;       /* 56–64px funziona bene per “1999” */
+  height: 36px;
+
+  padding: 0 12px;       /* niente padding verticale, lo dà la height */
+  margin: 0 4px 6px 0;
+  border: 2px solid #fff;
+  border-radius: 999px;  /* pill */
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+
+  overflow: hidden;      /* serve per l’animazione di riempimento */
+  z-index: 0;
+  transition: color .25s ease;
+  font-variant-numeric: tabular-nums; /* numeri allineati, opzionale */
+}
+.year-btn::before {
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:0;
+  background:#fff;
+  transition: width .25s ease;
+  z-index:-1;
+}
+.year-btn:hover::before { width:100%; }
+.year-btn:hover { color:#000; }
+.year-btn.active {
+  border-color:#60a5fa;
+  color:#60a5fa;
+}
+
+/* === Chart list (look alla RYM) === */
+.chart-list { list-style:none; padding:0; margin:0; }
+.chart-item {
+  display:flex; align-items:center; gap:1rem;
+  background:#161b22; border:1px solid #30363d;
+  border-radius:10px; padding:1rem; margin-bottom:1rem;
+}
+.chart-rank { width:2.2rem; text-align:center; font-weight:800; color:#cbd5e1; font-size:1.5rem; }
+.chart-cover { width:84px; height:84px; border-radius:8px; object-fit:cover; box-shadow:0 0 6px rgba(0,0,0,.6); }
+
+.chart-info { flex:1; min-width:0; }
+.chart-info .title { margin:0; font-size:1.15rem; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chart-info .artist { margin:.2rem 0 0; color:#60a5fa; font-weight:600; }
+.chart-info .year { margin:.15rem 0 0; color:#a3a3a3; font-size:.9rem; }
+
+.chart-stats { min-width:80px; text-align:right; }
+.chart-stats .score { font-size:1.1rem; font-weight:800; }
+.chart-stats .votes { font-size:.9rem; color:#a3a3a3; }
+.chart-stats .reviews { font-size:.8rem; color:#737373; }

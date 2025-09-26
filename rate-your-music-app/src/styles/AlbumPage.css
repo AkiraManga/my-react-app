@@ -1,63 +1,155 @@
-.album-page {
-  padding: 2rem;
-  color: #fff;
-  background-color: #111;
+/* ===== Pagina Album ===== */
+.rym-album {
+  background-color: #0d1117;
+  color: #eee;
   min-height: 100vh;
+  /* spazio sotto la navbar fixed (evita titolo/cover tagliati) */
+  padding: 6rem 1.5rem 3rem;
+  font-family: "Inter", "Helvetica", Arial, sans-serif;
 }
 
+/* Layout intestazione */
 .album-header {
-  display: flex;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 320px 1fr;
   gap: 2rem;
-  align-items: flex-start;
+  align-items: start;
 }
+@media (max-width: 900px) {
+  .album-header { grid-template-columns: 1fr; }
+}
+
+.left-col { position: relative; }
 
 .album-cover {
-  width: 300px;
+  width: 320px;
+  height: 320px;
   border-radius: 10px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.6);
+  object-fit: contain;        /* mostra tutta la cover */
+  background: #000;
+  box-shadow: 0 6px 22px rgba(0,0,0,.4);
+}
+@media (max-width: 900px) {
+  .album-cover { width: 100%; height: auto; max-width: 360px; }
 }
 
-.album-info {
-  max-width: 600px;
-}
-
-.album-info h1 {
-  margin: 0;
-  font-size: 2rem;
-}
-
-.album-desc {
-  margin-top: 1rem;
-  font-style: italic;
-  color: #bbb;
-}
-
-.tracklist {
-  margin-top: 2rem;
-}
-
-.tracklist h3 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.tracklist ol {
-  list-style-position: inside;
-  padding: 0;
-}
-
-.tracklist li {
-  margin: 0.5rem 0;
-}
-.login-btn {
-  background: #f48c06;
-  color: white;
-  padding: 0.6em 1.2em;
-  border: none;
-  border-radius: 5px;
+/* Preferiti */
+.album-actions { margin-top: 1rem; }
+.btn-fav {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: .7rem 1rem;
+  font-weight: 700;
+  background: #ec4899;
+  color: #fff;
   cursor: pointer;
 }
+.btn-fav:hover { background:#db2777; }
 
-.login-btn:hover {
-  background: #e67c00; /* effetto hover */
+/* Tracklist */
+.tracklist { margin-top: 2rem; }
+.tracklist h3 { margin: 0 0 .7rem; font-weight: 700; color: #fff; }
+.tracklist ol { list-style: decimal inside; margin: 0; padding: 0; color: #ddd; }
+.tracklist li { margin: .3rem 0; }
+
+/* Info a destra */
+.album-info h1 { margin: 0 0 .2rem; font-size: 2rem; font-weight: 800; color: #fff; }
+.album-info .artist { margin: 0 0 .5rem; font-size: 1.2rem; color: #e5e7eb; }
+.album-info .rating { margin: .2rem 0 .6rem; color: #ffd54a; }
+.album-info .rank { color: #9ca3af; font-style: italic; }
+
+/* Box recensione */
+.review-box {
+  margin-top: 1.2rem;
+  background: #111827;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 1rem;
+}
+.review-box h3 { margin: 0 0 .6rem; }
+
+/* Pulsante invio */
+.btn-send {
+  margin-top: .6rem;
+  padding: .6rem 1rem;
+  border-radius: 8px;
+  border: 0;
+  font-weight: 700;
+  color: #fff;
+  background: #2563eb;
+  cursor: pointer;
+}
+.btn-send.disabled,
+.btn-send:disabled {
+  background: #4b5563;
+  cursor: not-allowed;
+}
+
+/* Commenti */
+.reviews { margin-top: 1.2rem; }
+.reviews ul { list-style: none; padding: 0; margin: 0; }
+.reviews li { padding: .8rem 0; border-bottom: 1px solid #1f2937; }
+.reviews li:last-child { border-bottom: 0; }
+.reviews .meta { color: #6b7280; font-size: .85rem; }
+.reviews button {
+  margin-top: .25rem; background: none; border: 0; color: #60a5fa; cursor: pointer;
+}
+.reviews button:hover { text-decoration: underline; }
+
+/* ===== Slider a stelle (visibile solo se loggato) ===== */
+.star-range {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  user-select: none;
+  color: #e5e7eb;
+}
+
+/* Track con maschera a stelle + base grigia (riempita in giallo fino a --p) */
+.star-range input[type="range"] {
+  --s: 28px;                 /* altezza stella */
+  --stars: 5;                /* numero di stelle */
+  --p: 0;                    /* frazione riempita (0..1), la settiamo da React */
+
+  width: calc(var(--s) * var(--stars));
+  height: var(--s);
+  padding-inline: calc(var(--s) / 2);
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+
+  /* layer giallo (sopra) = riempito fino a --p ; layer grigio (sotto) = base */
+  background:
+    linear-gradient(#fff220 0 0) left / calc(var(--p) * 100%) 100% no-repeat,
+    linear-gradient(#6b7280 0 0) left / 100% 100% no-repeat;
+
+  /* maschera stella ripetuta orizzontalmente */
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 5 L79 95 L2 40 L98 40 L21 95 Z'/></svg>") left / var(--s) 100% repeat-x;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 5 L79 95 L2 40 L98 40 L21 95 Z'/></svg>") left / var(--s) 100% repeat-x;
+}
+
+/* Thumb “invisibile” ma cliccabile */
+.star-range input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1px;
+  height: var(--s);
+  background: transparent;
+}
+.star-range input[type="range"]::-moz-range-thumb {
+  width: 1px;
+  height: var(--s);
+  background: transparent;
+  border: 0;
+}
+
+/* Focus */
+.star-range input[type="range"]:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }

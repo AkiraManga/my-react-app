@@ -1,0 +1,3600 @@
+Resources:
+  FrontendBucketEFE2E19C:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: rate-your-music101
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: aws-cdk:auto-delete-objects
+          Value: "true"
+        - Key: aws-cdk:cr-owned:14759e1b
+          Value: "true"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkStack/FrontendBucket/Resource
+  FrontendBucketPolicy1DFF75D9:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: FrontendBucketEFE2E19C
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:DeleteObject*
+              - s3:GetBucket*
+              - s3:List*
+              - s3:PutBucketPolicy
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::GetAtt:
+                  - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+                  - Arn
+            Resource:
+              - Fn::GetAtt:
+                  - FrontendBucketEFE2E19C
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - FrontendBucketEFE2E19C
+                        - Arn
+                    - /*
+          - Action: s3:GetObject
+            Condition:
+              StringEquals:
+                AWS:SourceArn:
+                  Fn::Join:
+                    - ""
+                    - - arn:aws:cloudfront::384981131796:distribution/
+                      - Ref: FrontendDistribution
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt:
+                      - FrontendBucketEFE2E19C
+                      - Arn
+                  - /*
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: CdkStack/FrontendBucket/Policy/Resource
+  FrontendBucketAutoDeleteObjectsCustomResourceDB860B32:
+    Type: Custom::S3AutoDeleteObjects
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F
+          - Arn
+      BucketName:
+        Ref: FrontendBucketEFE2E19C
+    DependsOn:
+      - FrontendBucketPolicy1DFF75D9
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkStack/FrontendBucket/AutoDeleteObjectsCustomResource/Default
+  CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+        - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role
+  CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-384981131796-eu-west-3
+        S3Key: faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6.zip
+      Timeout: 900
+      MemorySize: 128
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+          - Arn
+      Runtime: nodejs22.x
+      Description:
+        Fn::Join:
+          - ""
+          - - "Lambda function for auto-deleting objects in "
+            - Ref: FrontendBucketEFE2E19C
+            - " S3 bucket."
+    DependsOn:
+      - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+    Metadata:
+      aws:cdk:path: CdkStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler
+      aws:asset:path: asset.faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6
+      aws:asset:property: Code
+  MyOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Description: OAC per CloudFront -> S3
+        Name: MyOAC
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+    Metadata:
+      aws:cdk:path: CdkStack/MyOAC
+  CommentLikesTopic1577D93B:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: comment-likes-topic
+    Metadata:
+      aws:cdk:path: CdkStack/CommentLikesTopic/Resource
+  CommentLikesTopictuaemailditestexamplecom4E8BB4C1:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: tua_email_di_test@example.com
+      Protocol: email
+      TopicArn:
+        Ref: CommentLikesTopic1577D93B
+    Metadata:
+      aws:cdk:path: CdkStack/CommentLikesTopic/tua_email_di_test@example.com/Resource
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: false
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        Origins:
+          - DomainName:
+              Fn::GetAtt:
+                - FrontendBucketEFE2E19C
+                - RegionalDomainName
+            Id: S3Origin
+            OriginAccessControlId:
+              Fn::GetAtt:
+                - MyOAC
+                - Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+    Metadata:
+      aws:cdk:path: CdkStack/FrontendDistribution
+  RateYourMusicUserPool3207CACE:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_phone_number
+            Priority: 1
+          - Name: verified_email
+            Priority: 2
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AutoVerifiedAttributes:
+        - email
+      EmailVerificationMessage: The verification code to your new account is {####}
+      EmailVerificationSubject: Verify your new account
+      LambdaConfig:
+        PostConfirmation:
+          Fn::GetAtt:
+            - PostConfirmationLambdaC4F60401
+            - Arn
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+      SmsVerificationMessage: The verification code to your new account is {####}
+      UsernameAttributes:
+        - email
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailMessage: The verification code to your new account is {####}
+        EmailSubject: Verify your new account
+        SmsMessage: The verification code to your new account is {####}
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicUserPool/Resource
+  RateYourMusicUserPoolRateYourMusicClient6F21225B:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      AllowedOAuthFlows:
+        - implicit
+        - code
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+        - openid
+        - email
+        - profile
+      CallbackURLs:
+        - Fn::Join:
+            - ""
+            - - https://
+              - Fn::GetAtt:
+                  - FrontendDistribution
+                  - DomainName
+              - /callback
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      GenerateSecret: false
+      LogoutURLs:
+        - Fn::Join:
+            - ""
+            - - https://
+              - Fn::GetAtt:
+                  - FrontendDistribution
+                  - DomainName
+      SupportedIdentityProviders:
+        - COGNITO
+      UserPoolId:
+        Ref: RateYourMusicUserPool3207CACE
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicUserPool/RateYourMusicClient/Resource
+  RateYourMusicUserPoolRateYourMusicDomainBA92D58A:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: rateyourmusic101
+      UserPoolId:
+        Ref: RateYourMusicUserPool3207CACE
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicUserPool/RateYourMusicDomain/Resource
+  RateYourMusicUserPoolPostConfirmationCognitoD93A1139:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostConfirmationLambdaC4F60401
+          - Arn
+      Principal: cognito-idp.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - RateYourMusicUserPool3207CACE
+          - Arn
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicUserPool/PostConfirmationCognito
+  UsersTable9725E9C8:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkStack/UsersTable/Resource
+  AlbumsTable989E2DD6:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: album_id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: album_id
+          KeyType: HASH
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkStack/AlbumsTable/Resource
+  RatingsTableAE84AA8D:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: album_id
+          AttributeType: S
+        - AttributeName: user_id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: album_id
+          KeyType: HASH
+        - AttributeName: user_id
+          KeyType: RANGE
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkStack/RatingsTable/Resource
+  ChartsTable7D7B3343:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: chart_key
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: chart_key
+          KeyType: HASH
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkStack/ChartsTable/Resource
+  SpotifyCredentials6CCE15A3:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      GenerateSecretString:
+        ExcludePunctuation: true
+        GenerateStringKey: SPOTIPY_CLIENT_SECRET
+        PasswordLength: 40
+        SecretStringTemplate: '{"SPOTIPY_CLIENT_ID":"<PUT_HERE_CLIENT_ID>"}'
+      Name: spotify/credentials
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyCredentials/Resource
+  SpotifyScraperVpc5241D047:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: CdkStack/SpotifyScraperVpc
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/Resource
+  SpotifyScraperVpcpublicSubnet1SubnetD7EF4B91:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-west-3a
+      CidrBlock: 10.0.0.0/17
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: Name
+          Value: CdkStack/SpotifyScraperVpc/publicSubnet1
+      VpcId:
+        Ref: SpotifyScraperVpc5241D047
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/publicSubnet1/Subnet
+  SpotifyScraperVpcpublicSubnet1RouteTableA7371043:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: CdkStack/SpotifyScraperVpc/publicSubnet1
+      VpcId:
+        Ref: SpotifyScraperVpc5241D047
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/publicSubnet1/RouteTable
+  SpotifyScraperVpcpublicSubnet1RouteTableAssociation57BCAA66:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: SpotifyScraperVpcpublicSubnet1RouteTableA7371043
+      SubnetId:
+        Ref: SpotifyScraperVpcpublicSubnet1SubnetD7EF4B91
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/publicSubnet1/RouteTableAssociation
+  SpotifyScraperVpcpublicSubnet1DefaultRouteB418D3EE:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: SpotifyScraperVpcIGW5B29A96B
+      RouteTableId:
+        Ref: SpotifyScraperVpcpublicSubnet1RouteTableA7371043
+    DependsOn:
+      - SpotifyScraperVpcVPCGW7DBD0BC5
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/publicSubnet1/DefaultRoute
+  SpotifyScraperVpcpublicSubnet2Subnet642E52A7:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-west-3b
+      CidrBlock: 10.0.128.0/17
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: Name
+          Value: CdkStack/SpotifyScraperVpc/publicSubnet2
+      VpcId:
+        Ref: SpotifyScraperVpc5241D047
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/publicSubnet2/Subnet
+  SpotifyScraperVpcpublicSubnet2RouteTable257B96DD:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: CdkStack/SpotifyScraperVpc/publicSubnet2
+      VpcId:
+        Ref: SpotifyScraperVpc5241D047
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/publicSubnet2/RouteTable
+  SpotifyScraperVpcpublicSubnet2RouteTableAssociation0D99A87F:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: SpotifyScraperVpcpublicSubnet2RouteTable257B96DD
+      SubnetId:
+        Ref: SpotifyScraperVpcpublicSubnet2Subnet642E52A7
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/publicSubnet2/RouteTableAssociation
+  SpotifyScraperVpcpublicSubnet2DefaultRoute150DF244:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: SpotifyScraperVpcIGW5B29A96B
+      RouteTableId:
+        Ref: SpotifyScraperVpcpublicSubnet2RouteTable257B96DD
+    DependsOn:
+      - SpotifyScraperVpcVPCGW7DBD0BC5
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/publicSubnet2/DefaultRoute
+  SpotifyScraperVpcIGW5B29A96B:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: CdkStack/SpotifyScraperVpc
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/IGW
+  SpotifyScraperVpcVPCGW7DBD0BC5:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: SpotifyScraperVpcIGW5B29A96B
+      VpcId:
+        Ref: SpotifyScraperVpc5241D047
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/VPCGW
+  SpotifyScraperVpcRestrictDefaultSecurityGroupCustomResourceCC0678E2:
+    Type: Custom::VpcRestrictDefaultSG
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E
+          - Arn
+      DefaultSecurityGroupId:
+        Fn::GetAtt:
+          - SpotifyScraperVpc5241D047
+          - DefaultSecurityGroup
+      Account: "384981131796"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperVpc/RestrictDefaultSecurityGroupCustomResource/Default
+  CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+        - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: Inline
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:AuthorizeSecurityGroupIngress
+                  - ec2:AuthorizeSecurityGroupEgress
+                  - ec2:RevokeSecurityGroupIngress
+                  - ec2:RevokeSecurityGroupEgress
+                Resource:
+                  - Fn::Join:
+                      - ""
+                      - - arn:aws:ec2:eu-west-3:384981131796:security-group/
+                        - Fn::GetAtt:
+                            - SpotifyScraperVpc5241D047
+                            - DefaultSecurityGroup
+    Metadata:
+      aws:cdk:path: CdkStack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role
+  CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-384981131796-eu-west-3
+        S3Key: 7fa1e366ee8a9ded01fc355f704cff92bfd179574e6f9cfee800a3541df1b200.zip
+      Timeout: 900
+      MemorySize: 128
+      Handler: __entrypoint__.handler
+      Role:
+        Fn::GetAtt:
+          - CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0
+          - Arn
+      Runtime: nodejs22.x
+      Description: Lambda function for removing all inbound/outbound rules from the VPC default security group
+    DependsOn:
+      - CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0
+    Metadata:
+      aws:cdk:path: CdkStack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler
+      aws:asset:path: asset.7fa1e366ee8a9ded01fc355f704cff92bfd179574e6f9cfee800a3541df1b200
+      aws:asset:property: Code
+  SpotifyScraperCluster0B665ECF:
+    Type: AWS::ECS::Cluster
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperCluster/Resource
+  NotifyLambdaServiceRole12701B1A:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/NotifyLambda/ServiceRole/Resource
+  NotifyLambdaServiceRoleDefaultPolicyCD2627C4:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - ses:SendEmail
+              - ses:SendRawEmail
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: NotifyLambdaServiceRoleDefaultPolicyCD2627C4
+      Roles:
+        - Ref: NotifyLambdaServiceRole12701B1A
+    Metadata:
+      aws:cdk:path: CdkStack/NotifyLambda/ServiceRole/DefaultPolicy/Resource
+  NotifyLambda68AEBD5B:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:f564bcb7e10f941b0a22306e53ef1b3d7b68ec78aa56beea7228ca4f9b457f77
+      Environment:
+        Variables:
+          SES_SOURCE_EMAIL: tua_email_verificata@dominio.com
+      MemorySize: 256
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - NotifyLambdaServiceRole12701B1A
+          - Arn
+      Timeout: 30
+    DependsOn:
+      - NotifyLambdaServiceRoleDefaultPolicyCD2627C4
+      - NotifyLambdaServiceRole12701B1A
+    Metadata:
+      aws:cdk:path: CdkStack/NotifyLambda/Resource
+      aws:asset:path: asset.f564bcb7e10f941b0a22306e53ef1b3d7b68ec78aa56beea7228ca4f9b457f77
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  NotifyLambdaLogGroupAA56A142:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: NotifyLambda68AEBD5B
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/NotifyLambda/LogGroup/Resource
+  RatingsLambdaServiceRole3F3C3E5A:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/RatingsLambda/ServiceRole/Resource
+  RatingsLambdaServiceRoleDefaultPolicyAAEB09EA:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - AlbumsTable989E2DD6
+                  - Arn
+              - Fn::GetAtt:
+                  - RatingsTableAE84AA8D
+                  - Arn
+              - Ref: AWS::NoValue
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:Scan
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - UsersTable9725E9C8
+                  - Arn
+              - Ref: AWS::NoValue
+          - Action: sns:Publish
+            Effect: Allow
+            Resource:
+              Ref: CommentLikesTopic1577D93B
+          - Action: lambda:InvokeFunction
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - NotifyLambda68AEBD5B
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - NotifyLambda68AEBD5B
+                        - Arn
+                    - :*
+        Version: "2012-10-17"
+      PolicyName: RatingsLambdaServiceRoleDefaultPolicyAAEB09EA
+      Roles:
+        - Ref: RatingsLambdaServiceRole3F3C3E5A
+    Metadata:
+      aws:cdk:path: CdkStack/RatingsLambda/ServiceRole/DefaultPolicy/Resource
+  RatingsLambda183F3C95:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:aeeb5b0370138a504ebaa430913f7ca0b66dfb094a3148a25abddf0d1a3d0365
+      Environment:
+        Variables:
+          RATINGS_TABLE:
+            Ref: RatingsTableAE84AA8D
+          ALBUMS_TABLE:
+            Ref: AlbumsTable989E2DD6
+          USERS_TABLE:
+            Ref: UsersTable9725E9C8
+          SNS_TOPIC_ARN:
+            Ref: CommentLikesTopic1577D93B
+          NOTIFY_LAMBDA_NAME:
+            Ref: NotifyLambda68AEBD5B
+      MemorySize: 256
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - RatingsLambdaServiceRole3F3C3E5A
+          - Arn
+      Timeout: 30
+    DependsOn:
+      - RatingsLambdaServiceRoleDefaultPolicyAAEB09EA
+      - RatingsLambdaServiceRole3F3C3E5A
+    Metadata:
+      aws:cdk:path: CdkStack/RatingsLambda/Resource
+      aws:asset:path: asset.aeeb5b0370138a504ebaa430913f7ca0b66dfb094a3148a25abddf0d1a3d0365
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  RatingsLambdaLogGroup4CBB511D:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: RatingsLambda183F3C95
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/RatingsLambda/LogGroup/Resource
+  GetAlbumsLambdaServiceRoleAE5A5017:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/GetAlbumsLambda/ServiceRole/Resource
+  GetAlbumsLambdaServiceRoleDefaultPolicy962482E3:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:Scan
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - AlbumsTable989E2DD6
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: GetAlbumsLambdaServiceRoleDefaultPolicy962482E3
+      Roles:
+        - Ref: GetAlbumsLambdaServiceRoleAE5A5017
+    Metadata:
+      aws:cdk:path: CdkStack/GetAlbumsLambda/ServiceRole/DefaultPolicy/Resource
+  GetAlbumsLambdaC7028273:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:a51f5fed690946e881e52363acb1cd41f3f22865934d79bc8fd6e517da7b2ce2
+      Environment:
+        Variables:
+          ALBUMS_TABLE:
+            Ref: AlbumsTable989E2DD6
+      MemorySize: 512
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - GetAlbumsLambdaServiceRoleAE5A5017
+          - Arn
+      Timeout: 30
+    DependsOn:
+      - GetAlbumsLambdaServiceRoleDefaultPolicy962482E3
+      - GetAlbumsLambdaServiceRoleAE5A5017
+    Metadata:
+      aws:cdk:path: CdkStack/GetAlbumsLambda/Resource
+      aws:asset:path: asset.a51f5fed690946e881e52363acb1cd41f3f22865934d79bc8fd6e517da7b2ce2
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  GetAlbumsLambdaLogGroup7C95CDAF:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: GetAlbumsLambdaC7028273
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/GetAlbumsLambda/LogGroup/Resource
+  VoteLambdaServiceRoleB204D3A9:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/VoteLambda/ServiceRole/Resource
+  VoteLambdaServiceRoleDefaultPolicyAA040BFB:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - AlbumsTable989E2DD6
+                  - Arn
+              - Fn::GetAtt:
+                  - RatingsTableAE84AA8D
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: VoteLambdaServiceRoleDefaultPolicyAA040BFB
+      Roles:
+        - Ref: VoteLambdaServiceRoleB204D3A9
+    Metadata:
+      aws:cdk:path: CdkStack/VoteLambda/ServiceRole/DefaultPolicy/Resource
+  VoteLambda4858D112:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:f1ba939b596e97fd212e81858c0f82cbbf6a9901e5779a3a633820b44737a745
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - VoteLambdaServiceRoleB204D3A9
+          - Arn
+    DependsOn:
+      - VoteLambdaServiceRoleDefaultPolicyAA040BFB
+      - VoteLambdaServiceRoleB204D3A9
+    Metadata:
+      aws:cdk:path: CdkStack/VoteLambda/Resource
+      aws:asset:path: asset.f1ba939b596e97fd212e81858c0f82cbbf6a9901e5779a3a633820b44737a745
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  VoteLambdaLogGroup67A48F70:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: VoteLambda4858D112
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/VoteLambda/LogGroup/Resource
+  FavoritesLambdaServiceRole87A3DA15:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/FavoritesLambda/ServiceRole/Resource
+  FavoritesLambdaServiceRoleDefaultPolicy099FA959:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - UsersTable9725E9C8
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: FavoritesLambdaServiceRoleDefaultPolicy099FA959
+      Roles:
+        - Ref: FavoritesLambdaServiceRole87A3DA15
+    Metadata:
+      aws:cdk:path: CdkStack/FavoritesLambda/ServiceRole/DefaultPolicy/Resource
+  FavoritesLambda04E097BA:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:760ec6a24e6e6e3118870fccf8c7051ad1749b90cea5763c07d80b6b1fdbf584
+      Environment:
+        Variables:
+          USERS_TABLE:
+            Ref: UsersTable9725E9C8
+      MemorySize: 256
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - FavoritesLambdaServiceRole87A3DA15
+          - Arn
+      Timeout: 30
+    DependsOn:
+      - FavoritesLambdaServiceRoleDefaultPolicy099FA959
+      - FavoritesLambdaServiceRole87A3DA15
+    Metadata:
+      aws:cdk:path: CdkStack/FavoritesLambda/Resource
+      aws:asset:path: asset.760ec6a24e6e6e3118870fccf8c7051ad1749b90cea5763c07d80b6b1fdbf584
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  FavoritesLambdaLogGroupB96AE735:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: FavoritesLambda04E097BA
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/FavoritesLambda/LogGroup/Resource
+  AuthLambdaServiceRole7D6ECDEC:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/AuthLambda/ServiceRole/Resource
+  AuthLambda6BB8C88C:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:f14c085416496f7d725d5190cad96364efaab68fa0f133f024de570e698472ee
+      Environment:
+        Variables:
+          COGNITO_DOMAIN:
+            Fn::Join:
+              - ""
+              - - Ref: RateYourMusicUserPoolRateYourMusicDomainBA92D58A
+                - .auth.eu-west-3.amazoncognito.com
+          COGNITO_CLIENT_ID:
+            Ref: RateYourMusicUserPoolRateYourMusicClient6F21225B
+          REDIRECT_URI:
+            Fn::Join:
+              - ""
+              - - https://
+                - Fn::GetAtt:
+                    - FrontendDistribution
+                    - DomainName
+                - /callback
+      MemorySize: 512
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - AuthLambdaServiceRole7D6ECDEC
+          - Arn
+      Timeout: 30
+    DependsOn:
+      - AuthLambdaServiceRole7D6ECDEC
+    Metadata:
+      aws:cdk:path: CdkStack/AuthLambda/Resource
+      aws:asset:path: asset.f14c085416496f7d725d5190cad96364efaab68fa0f133f024de570e698472ee
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  AuthLambdaLogGroup4AE3A9A6:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: AuthLambda6BB8C88C
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/AuthLambda/LogGroup/Resource
+  SeedDataLambdaServiceRoleFA061EBC:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/SeedDataLambda/ServiceRole/Resource
+  SeedDataLambdaServiceRoleDefaultPolicyFD0BA2C5:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchWriteItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - AlbumsTable989E2DD6
+                  - Arn
+              - Fn::GetAtt:
+                  - RatingsTableAE84AA8D
+                  - Arn
+              - Fn::GetAtt:
+                  - UsersTable9725E9C8
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: SeedDataLambdaServiceRoleDefaultPolicyFD0BA2C5
+      Roles:
+        - Ref: SeedDataLambdaServiceRoleFA061EBC
+    Metadata:
+      aws:cdk:path: CdkStack/SeedDataLambda/ServiceRole/DefaultPolicy/Resource
+  SeedDataLambda13CDAF87:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:7950aec4dbcb869ecdb409e444b692c01af5f744f180eea5c4879fc66054ca5d
+      Environment:
+        Variables:
+          ALBUMS_TABLE:
+            Ref: AlbumsTable989E2DD6
+          USERS_TABLE:
+            Ref: UsersTable9725E9C8
+          RATINGS_TABLE:
+            Ref: RatingsTableAE84AA8D
+      MemorySize: 512
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - SeedDataLambdaServiceRoleFA061EBC
+          - Arn
+      Timeout: 120
+    DependsOn:
+      - SeedDataLambdaServiceRoleDefaultPolicyFD0BA2C5
+      - SeedDataLambdaServiceRoleFA061EBC
+    Metadata:
+      aws:cdk:path: CdkStack/SeedDataLambda/Resource
+      aws:asset:path: asset.7950aec4dbcb869ecdb409e444b692c01af5f744f180eea5c4879fc66054ca5d
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  SeedDataLambdaLogGroup566C9E09:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: SeedDataLambda13CDAF87
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/SeedDataLambda/LogGroup/Resource
+  PostConfirmationLambdaServiceRole80A1DAC4:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/PostConfirmationLambda/ServiceRole/Resource
+  PostConfirmationLambdaServiceRoleDefaultPolicy5EC3124B:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchWriteItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - UsersTable9725E9C8
+                  - Arn
+              - Ref: AWS::NoValue
+          - Action: sns:Subscribe
+            Effect: Allow
+            Resource:
+              Ref: CommentLikesTopic1577D93B
+        Version: "2012-10-17"
+      PolicyName: PostConfirmationLambdaServiceRoleDefaultPolicy5EC3124B
+      Roles:
+        - Ref: PostConfirmationLambdaServiceRole80A1DAC4
+    Metadata:
+      aws:cdk:path: CdkStack/PostConfirmationLambda/ServiceRole/DefaultPolicy/Resource
+  PostConfirmationLambdaC4F60401:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:af8c0e17c8f36381f54e484b41ed83260383052df0a553f9aca2f8f7c347ae26
+      Environment:
+        Variables:
+          USERS_TABLE:
+            Ref: UsersTable9725E9C8
+          SNS_TOPIC_ARN:
+            Ref: CommentLikesTopic1577D93B
+      MemorySize: 256
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - PostConfirmationLambdaServiceRole80A1DAC4
+          - Arn
+      Timeout: 30
+    DependsOn:
+      - PostConfirmationLambdaServiceRoleDefaultPolicy5EC3124B
+      - PostConfirmationLambdaServiceRole80A1DAC4
+    Metadata:
+      aws:cdk:path: CdkStack/PostConfirmationLambda/Resource
+      aws:asset:path: asset.af8c0e17c8f36381f54e484b41ed83260383052df0a553f9aca2f8f7c347ae26
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  PostConfirmationLambdaLogGroupEBF6194F:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: PostConfirmationLambdaC4F60401
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/PostConfirmationLambda/LogGroup/Resource
+  SnsSubscribeLambdaServiceRole29095CD6:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/SnsSubscribeLambda/ServiceRole/Resource
+  SnsSubscribeLambdaServiceRoleDefaultPolicy6B1A50A3:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:Scan
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - UsersTable9725E9C8
+                  - Arn
+              - Ref: AWS::NoValue
+          - Action: sns:Subscribe
+            Effect: Allow
+            Resource:
+              Ref: CommentLikesTopic1577D93B
+        Version: "2012-10-17"
+      PolicyName: SnsSubscribeLambdaServiceRoleDefaultPolicy6B1A50A3
+      Roles:
+        - Ref: SnsSubscribeLambdaServiceRole29095CD6
+    Metadata:
+      aws:cdk:path: CdkStack/SnsSubscribeLambda/ServiceRole/DefaultPolicy/Resource
+  SnsSubscribeLambda5874F83F:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:e7d6920be7cbc312568fc95ab759030958828dc8b8ba99838819aa56299da89f
+      Environment:
+        Variables:
+          USERS_TABLE:
+            Ref: UsersTable9725E9C8
+          SNS_TOPIC_ARN:
+            Ref: CommentLikesTopic1577D93B
+      MemorySize: 256
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - SnsSubscribeLambdaServiceRole29095CD6
+          - Arn
+      Timeout: 30
+    DependsOn:
+      - SnsSubscribeLambdaServiceRoleDefaultPolicy6B1A50A3
+      - SnsSubscribeLambdaServiceRole29095CD6
+    Metadata:
+      aws:cdk:path: CdkStack/SnsSubscribeLambda/Resource
+      aws:asset:path: asset.e7d6920be7cbc312568fc95ab759030958828dc8b8ba99838819aa56299da89f
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  SnsSubscribeLambdaLogGroup40ED24D1:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: SnsSubscribeLambda5874F83F
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/SnsSubscribeLambda/LogGroup/Resource
+  SpotifyScraperTaskDefTaskRoleAD0829D6:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperTaskDef/TaskRole/Resource
+  SpotifyScraperTaskDefTaskRoleDefaultPolicy3E6BDF72:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - AlbumsTable989E2DD6
+                  - Arn
+              - Fn::GetAtt:
+                  - ChartsTable7D7B3343
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: SpotifyScraperTaskDefTaskRoleDefaultPolicy3E6BDF72
+      Roles:
+        - Ref: SpotifyScraperTaskDefTaskRoleAD0829D6
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperTaskDef/TaskRole/DefaultPolicy/Resource
+  SpotifyScraperTaskDef3E5B4BD6:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Environment:
+            - Name: CHARTS_TABLE
+              Value:
+                Ref: ChartsTable7D7B3343
+            - Name: START_YEAR
+              Value: "1970"
+            - Name: END_YEAR
+              Value: "2025"
+            - Name: MARKETS
+              Value: IT,FR,DE,ES,NL,SE,GB,IE,PT,BE,AT,CH
+            - Name: PER_MARKET_FETCH
+              Value: "100"
+            - Name: TOP_K
+              Value: "10"
+            - Name: AWS_REGION
+              Value: eu-west-3
+          Essential: true
+          Image:
+            Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:18cb2a7381c7caf6f66bff2149d199d9ff62e1bc46c7c29d08c6b543ee0b3a63
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group:
+                Ref: SpotifyScraperTaskDefSpotifyScraperContainerLogGroup0851E414
+              awslogs-stream-prefix: SpotifyScraper
+              awslogs-region: eu-west-3
+          Name: SpotifyScraperContainer
+          Secrets:
+            - Name: SPOTIPY_CLIENT_ID
+              ValueFrom:
+                Fn::Join:
+                  - ""
+                  - - Ref: SpotifyCredentials6CCE15A3
+                    - ":SPOTIPY_CLIENT_ID::"
+            - Name: SPOTIPY_CLIENT_SECRET
+              ValueFrom:
+                Fn::Join:
+                  - ""
+                  - - Ref: SpotifyCredentials6CCE15A3
+                    - ":SPOTIPY_CLIENT_SECRET::"
+      Cpu: "256"
+      ExecutionRoleArn:
+        Fn::GetAtt:
+          - SpotifyScraperTaskDefExecutionRoleE7C7AB8D
+          - Arn
+      Family: CdkStackSpotifyScraperTaskDefFF84910C
+      Memory: "512"
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn:
+        Fn::GetAtt:
+          - SpotifyScraperTaskDefTaskRoleAD0829D6
+          - Arn
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperTaskDef/Resource
+  SpotifyScraperTaskDefSpotifyScraperContainerLogGroup0851E414:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 7
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperTaskDef/SpotifyScraperContainer/LogGroup/Resource
+  SpotifyScraperTaskDefExecutionRoleE7C7AB8D:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperTaskDef/ExecutionRole/Resource
+  SpotifyScraperTaskDefExecutionRoleDefaultPolicyF5E4EFD5:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - ecr:BatchCheckLayerAvailability
+              - ecr:BatchGetImage
+              - ecr:GetDownloadUrlForLayer
+            Effect: Allow
+            Resource: arn:aws:ecr:eu-west-3:384981131796:repository/cdk-hnb659fds-container-assets-384981131796-eu-west-3
+          - Action: ecr:GetAuthorizationToken
+            Effect: Allow
+            Resource: "*"
+          - Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - SpotifyScraperTaskDefSpotifyScraperContainerLogGroup0851E414
+                - Arn
+          - Action:
+              - secretsmanager:DescribeSecret
+              - secretsmanager:GetSecretValue
+            Effect: Allow
+            Resource:
+              Ref: SpotifyCredentials6CCE15A3
+        Version: "2012-10-17"
+      PolicyName: SpotifyScraperTaskDefExecutionRoleDefaultPolicyF5E4EFD5
+      Roles:
+        - Ref: SpotifyScraperTaskDefExecutionRoleE7C7AB8D
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperTaskDef/ExecutionRole/DefaultPolicy/Resource
+  SpotifyScraperTaskDefEventsRoleB8AC0739:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperTaskDef/EventsRole/Resource
+  SpotifyScraperTaskDefEventsRoleDefaultPolicy9AB935DA:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: ecs:RunTask
+            Condition:
+              ArnEquals:
+                ecs:cluster:
+                  Fn::GetAtt:
+                    - SpotifyScraperCluster0B665ECF
+                    - Arn
+            Effect: Allow
+            Resource:
+              Ref: SpotifyScraperTaskDef3E5B4BD6
+          - Action: ecs:TagResource
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - arn:aws:ecs:eu-west-3:*:task/
+                  - Ref: SpotifyScraperCluster0B665ECF
+                  - /*
+          - Action: iam:PassRole
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - SpotifyScraperTaskDefExecutionRoleE7C7AB8D
+                  - Arn
+              - Fn::GetAtt:
+                  - SpotifyScraperTaskDefTaskRoleAD0829D6
+                  - Arn
+        Version: "2012-10-17"
+      PolicyName: SpotifyScraperTaskDefEventsRoleDefaultPolicy9AB935DA
+      Roles:
+        - Ref: SpotifyScraperTaskDefEventsRoleB8AC0739
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperTaskDef/EventsRole/DefaultPolicy/Resource
+  SpotifyScraperSGB1721343:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: CdkStack/SpotifyScraperSG
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      VpcId:
+        Ref: SpotifyScraperVpc5241D047
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperSG/Resource
+  SpotifyScraperSchedule3BCBAC6C:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: cron(0 3 * * ? *)
+      State: ENABLED
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - SpotifyScraperCluster0B665ECF
+              - Arn
+          EcsParameters:
+            LaunchType: FARGATE
+            NetworkConfiguration:
+              AwsVpcConfiguration:
+                AssignPublicIp: ENABLED
+                SecurityGroups:
+                  - Fn::GetAtt:
+                      - SpotifyScraperSGB1721343
+                      - GroupId
+                Subnets:
+                  - Ref: SpotifyScraperVpcpublicSubnet1SubnetD7EF4B91
+                  - Ref: SpotifyScraperVpcpublicSubnet2Subnet642E52A7
+            TaskCount: 1
+            TaskDefinitionArn:
+              Ref: SpotifyScraperTaskDef3E5B4BD6
+          Id: Target0
+          Input: "{}"
+          RoleArn:
+            Fn::GetAtt:
+              - SpotifyScraperTaskDefEventsRoleB8AC0739
+              - Arn
+    Metadata:
+      aws:cdk:path: CdkStack/SpotifyScraperSchedule/Resource
+  AppQueueFD3F4958:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 30
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkStack/AppQueue/Resource
+  ProducerLambdaServiceRole37E53FC3:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/ProducerLambda/ServiceRole/Resource
+  ProducerLambdaServiceRoleDefaultPolicy8D34AFD0:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+              - sqs:SendMessage
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - AppQueueFD3F4958
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: ProducerLambdaServiceRoleDefaultPolicy8D34AFD0
+      Roles:
+        - Ref: ProducerLambdaServiceRole37E53FC3
+    Metadata:
+      aws:cdk:path: CdkStack/ProducerLambda/ServiceRole/DefaultPolicy/Resource
+  ProducerLambdaC55AC1D4:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:c7188a0b9c65463ca59dddd8eb04187dfc858a840c0fd5f7efd017e987ea746e
+      Environment:
+        Variables:
+          QUEUE_URL:
+            Ref: AppQueueFD3F4958
+      MemorySize: 256
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - ProducerLambdaServiceRole37E53FC3
+          - Arn
+      Timeout: 30
+    DependsOn:
+      - ProducerLambdaServiceRoleDefaultPolicy8D34AFD0
+      - ProducerLambdaServiceRole37E53FC3
+    Metadata:
+      aws:cdk:path: CdkStack/ProducerLambda/Resource
+      aws:asset:path: asset.c7188a0b9c65463ca59dddd8eb04187dfc858a840c0fd5f7efd017e987ea746e
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  ProducerLambdaLogGroupE2D69EFE:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: ProducerLambdaC55AC1D4
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/ProducerLambda/LogGroup/Resource
+  ConsumerLambdaServiceRole9D55AA81:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/ConsumerLambda/ServiceRole/Resource
+  ConsumerLambdaServiceRoleDefaultPolicy49700BEC:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - sqs:ChangeMessageVisibility
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+              - sqs:ReceiveMessage
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - AppQueueFD3F4958
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: ConsumerLambdaServiceRoleDefaultPolicy49700BEC
+      Roles:
+        - Ref: ConsumerLambdaServiceRole9D55AA81
+    Metadata:
+      aws:cdk:path: CdkStack/ConsumerLambda/ServiceRole/DefaultPolicy/Resource
+  ConsumerLambdaF347BC65:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:ff5e1cf0992685d78d1c9447addf4adff0f1bf2f91f699a7853d7145b2763c3a
+      MemorySize: 256
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - ConsumerLambdaServiceRole9D55AA81
+          - Arn
+      Timeout: 30
+    DependsOn:
+      - ConsumerLambdaServiceRoleDefaultPolicy49700BEC
+      - ConsumerLambdaServiceRole9D55AA81
+    Metadata:
+      aws:cdk:path: CdkStack/ConsumerLambda/Resource
+      aws:asset:path: asset.ff5e1cf0992685d78d1c9447addf4adff0f1bf2f91f699a7853d7145b2763c3a
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  ConsumerLambdaLogGroup1F931612:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: ConsumerLambdaF347BC65
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/ConsumerLambda/LogGroup/Resource
+  ConsumerLambdaSqsEventSourceCdkStackAppQueueC2EE16F9B8259B97:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn:
+        Fn::GetAtt:
+          - AppQueueFD3F4958
+          - Arn
+      FunctionName:
+        Ref: ConsumerLambdaF347BC65
+    Metadata:
+      aws:cdk:path: CdkStack/ConsumerLambda/SqsEventSource:CdkStackAppQueueC2EE16F9/Resource
+  ChartsReadLambdaServiceRole9D3FCFBB:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/ChartsReadLambda/ServiceRole/Resource
+  ChartsReadLambdaServiceRoleDefaultPolicy84A740B2:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:Scan
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - ChartsTable7D7B3343
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: ChartsReadLambdaServiceRoleDefaultPolicy84A740B2
+      Roles:
+        - Ref: ChartsReadLambdaServiceRole9D3FCFBB
+    Metadata:
+      aws:cdk:path: CdkStack/ChartsReadLambda/ServiceRole/DefaultPolicy/Resource
+  ChartsReadLambda35DD8E61:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri:
+          Fn::Sub: 384981131796.dkr.ecr.eu-west-3.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-384981131796-eu-west-3:3011d3bc24729ffb945343fe9fb0a11fed6941b84850f2b9ed37e09fe1aa732d
+      Environment:
+        Variables:
+          CHARTS_TABLE:
+            Ref: ChartsTable7D7B3343
+      MemorySize: 256
+      PackageType: Image
+      Role:
+        Fn::GetAtt:
+          - ChartsReadLambdaServiceRole9D3FCFBB
+          - Arn
+      Timeout: 30
+    DependsOn:
+      - ChartsReadLambdaServiceRoleDefaultPolicy84A740B2
+      - ChartsReadLambdaServiceRole9D3FCFBB
+    Metadata:
+      aws:cdk:path: CdkStack/ChartsReadLambda/Resource
+      aws:asset:path: asset.3011d3bc24729ffb945343fe9fb0a11fed6941b84850f2b9ed37e09fe1aa732d
+      aws:asset:dockerfile-path: Dockerfile
+      aws:asset:property: Code.ImageUri
+  ChartsReadLambdaLogGroupD6FA887B:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: ChartsReadLambda35DD8E61
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/ChartsReadLambda/LogGroup/Resource
+  RateYourMusicAuthorizer3B87E402:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      IdentitySource: method.request.header.Authorization
+      Name: CdkStackRateYourMusicAuthorizerE90F9DEB
+      ProviderARNs:
+        - Fn::GetAtt:
+            - RateYourMusicUserPool3207CACE
+            - Arn
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+      Type: COGNITO_USER_POOLS
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicAuthorizer/Resource
+  RateYourMusicApiD17FF122:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: RateYourMusicApi
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Resource
+  RateYourMusicApiDeployment7A06CFCBbf16e8d0c501129b69859e21c9ef59fa:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: Automatically created by the RestApi construct
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    DependsOn:
+      - RateYourMusicApialbumsidGET998CD558
+      - RateYourMusicApialbumsidOPTIONS2AE63409
+      - RateYourMusicApialbumsidF1284568
+      - RateYourMusicApialbumsbytitletitleGET5CAE2712
+      - RateYourMusicApialbumsbytitletitleOPTIONS9C100A14
+      - RateYourMusicApialbumsbytitletitleD5FDF2EE
+      - RateYourMusicApialbumsbytitleOPTIONSDE101F3D
+      - RateYourMusicApialbumsbytitleB99C4B86
+      - RateYourMusicApialbumsGETD3A90039
+      - RateYourMusicApialbumsOPTIONSC181691C
+      - RateYourMusicApialbums1F21B731
+      - RateYourMusicApiauthcallbackGETF0AE2ACB
+      - RateYourMusicApiauthcallbackOPTIONS7AC2F40F
+      - RateYourMusicApiauthcallback0E5D11E8
+      - RateYourMusicApiauthOPTIONSB67A3422
+      - RateYourMusicApiauth0C12BAF4
+      - RateYourMusicApichartsregionyearGETB742D01C
+      - RateYourMusicApichartsregionyearOPTIONSDC9A2C21
+      - RateYourMusicApichartsregionyear62127713
+      - RateYourMusicApichartsregionOPTIONSBB6FE707
+      - RateYourMusicApichartsregion2AF8733A
+      - RateYourMusicApichartsOPTIONS5748AA8D
+      - RateYourMusicApicharts42DEB05F
+      - RateYourMusicApifavoritesOPTIONS114C76DB
+      - RateYourMusicApifavoritesPOST8384A524
+      - RateYourMusicApifavorites1EF1FE05
+      - RateYourMusicApiOPTIONS00D070C8
+      - RateYourMusicApiproducerOPTIONSFF99CC37
+      - RateYourMusicApiproducerPOST52156C7F
+      - RateYourMusicApiproducer31FB1AAF
+      - RateYourMusicApiratingsalbumidreviewuseridlikeOPTIONSCCC8E2A4
+      - RateYourMusicApiratingsalbumidreviewuseridlikePOST0D7445B8
+      - RateYourMusicApiratingsalbumidreviewuseridlike950945FC
+      - RateYourMusicApiratingsalbumidreviewuseridOPTIONSDC04A890
+      - RateYourMusicApiratingsalbumidreviewuserid0CA0EF6D
+      - RateYourMusicApiratingsalbumidGET4A4F7C9E
+      - RateYourMusicApiratingsalbumidOPTIONS8FA7949A
+      - RateYourMusicApiratingsalbumidPOSTD1CD72A8
+      - RateYourMusicApiratingsalbumid1136167B
+      - RateYourMusicApiratingsOPTIONSF2D4F391
+      - RateYourMusicApiratings7054845D
+      - RateYourMusicApiusersfavoritesalbumidOPTIONSB13FAFC2
+      - RateYourMusicApiusersfavoritesalbumidPOSTC1BB66AB
+      - RateYourMusicApiusersfavoritesalbumid3507CC07
+      - RateYourMusicApiusersfavoritesOPTIONS4199C314
+      - RateYourMusicApiusersfavoritesEF8BD50B
+      - RateYourMusicApiusersOPTIONS5996E181
+      - RateYourMusicApiusersA963CFC6
+      - RateYourMusicApivoteOPTIONS3FC3FF57
+      - RateYourMusicApivotePOSTF3E04E47
+      - RateYourMusicApivote2CFABE71
+      - RateYourMusicAuthorizer3B87E402
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Deployment/Resource
+      aws:cdk:do-not-refactor: true
+  RateYourMusicApiDeploymentStageprod2E544B60:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId:
+        Ref: RateYourMusicApiDeployment7A06CFCBbf16e8d0c501129b69859e21c9ef59fa
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+      StageName: prod
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/DeploymentStage.prod/Resource
+  RateYourMusicApiOPTIONS00D070C8:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Fn::GetAtt:
+          - RateYourMusicApiD17FF122
+          - RootResourceId
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/OPTIONS/Resource
+  RateYourMusicApialbums1F21B731:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - RateYourMusicApiD17FF122
+          - RootResourceId
+      PathPart: albums
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/Resource
+  RateYourMusicApialbumsOPTIONSC181691C:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApialbums1F21B731
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/OPTIONS/Resource
+  RateYourMusicApialbumsGETApiPermissionCdkStackRateYourMusicApi460852EDGETalbums61FA73E1:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - GetAlbumsLambdaC7028273
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /GET/albums
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/GET/ApiPermission.CdkStackRateYourMusicApi460852ED.GET..albums
+  RateYourMusicApialbumsGETApiPermissionTestCdkStackRateYourMusicApi460852EDGETalbums418D9140:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - GetAlbumsLambdaC7028273
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/GET/albums
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/GET/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.GET..albums
+  RateYourMusicApialbumsGETD3A90039:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - GetAlbumsLambdaC7028273
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApialbums1F21B731
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/GET/Resource
+  RateYourMusicApialbumsidF1284568:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: RateYourMusicApialbums1F21B731
+      PathPart: "{id}"
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/{id}/Resource
+  RateYourMusicApialbumsidOPTIONS2AE63409:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApialbumsidF1284568
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/{id}/OPTIONS/Resource
+  RateYourMusicApialbumsidGETApiPermissionCdkStackRateYourMusicApi460852EDGETalbumsid75891816:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - GetAlbumsLambdaC7028273
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /GET/albums/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/{id}/GET/ApiPermission.CdkStackRateYourMusicApi460852ED.GET..albums.{id}
+  RateYourMusicApialbumsidGETApiPermissionTestCdkStackRateYourMusicApi460852EDGETalbumsidE7333147:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - GetAlbumsLambdaC7028273
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/GET/albums/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/{id}/GET/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.GET..albums.{id}
+  RateYourMusicApialbumsidGET998CD558:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - GetAlbumsLambdaC7028273
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApialbumsidF1284568
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/{id}/GET/Resource
+  RateYourMusicApialbumsbytitleB99C4B86:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: RateYourMusicApialbums1F21B731
+      PathPart: by-title
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/by-title/Resource
+  RateYourMusicApialbumsbytitleOPTIONSDE101F3D:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApialbumsbytitleB99C4B86
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/by-title/OPTIONS/Resource
+  RateYourMusicApialbumsbytitletitleD5FDF2EE:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: RateYourMusicApialbumsbytitleB99C4B86
+      PathPart: "{title}"
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/by-title/{title}/Resource
+  RateYourMusicApialbumsbytitletitleOPTIONS9C100A14:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApialbumsbytitletitleD5FDF2EE
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/by-title/{title}/OPTIONS/Resource
+  RateYourMusicApialbumsbytitletitleGETApiPermissionCdkStackRateYourMusicApi460852EDGETalbumsbytitletitle8BA4DAB6:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - GetAlbumsLambdaC7028273
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /GET/albums/by-title/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/by-title/{title}/GET/ApiPermission.CdkStackRateYourMusicApi460852ED.GET..albums.by-title.{title}
+  RateYourMusicApialbumsbytitletitleGETApiPermissionTestCdkStackRateYourMusicApi460852EDGETalbumsbytitletitle171C47D3:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - GetAlbumsLambdaC7028273
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/GET/albums/by-title/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/by-title/{title}/GET/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.GET..albums.by-title.{title}
+  RateYourMusicApialbumsbytitletitleGET5CAE2712:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - GetAlbumsLambdaC7028273
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApialbumsbytitletitleD5FDF2EE
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/albums/by-title/{title}/GET/Resource
+  RateYourMusicApiratings7054845D:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - RateYourMusicApiD17FF122
+          - RootResourceId
+      PathPart: ratings
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/Resource
+  RateYourMusicApiratingsOPTIONSF2D4F391:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApiratings7054845D
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/OPTIONS/Resource
+  RateYourMusicApiratingsalbumid1136167B:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: RateYourMusicApiratings7054845D
+      PathPart: "{album_id}"
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/Resource
+  RateYourMusicApiratingsalbumidOPTIONS8FA7949A:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApiratingsalbumid1136167B
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/OPTIONS/Resource
+  RateYourMusicApiratingsalbumidGETApiPermissionCdkStackRateYourMusicApi460852EDGETratingsalbumid8D3DB9F7:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - RatingsLambda183F3C95
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /GET/ratings/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/GET/ApiPermission.CdkStackRateYourMusicApi460852ED.GET..ratings.{album_id}
+  RateYourMusicApiratingsalbumidGETApiPermissionTestCdkStackRateYourMusicApi460852EDGETratingsalbumid34977581:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - RatingsLambda183F3C95
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/GET/ratings/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/GET/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.GET..ratings.{album_id}
+  RateYourMusicApiratingsalbumidGET4A4F7C9E:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - RatingsLambda183F3C95
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApiratingsalbumid1136167B
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/GET/Resource
+  RateYourMusicApiratingsalbumidPOSTApiPermissionCdkStackRateYourMusicApi460852EDPOSTratingsalbumidD79DF2EA:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - RatingsLambda183F3C95
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /POST/ratings/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/POST/ApiPermission.CdkStackRateYourMusicApi460852ED.POST..ratings.{album_id}
+  RateYourMusicApiratingsalbumidPOSTApiPermissionTestCdkStackRateYourMusicApi460852EDPOSTratingsalbumid6016DEF6:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - RatingsLambda183F3C95
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/POST/ratings/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/POST/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.POST..ratings.{album_id}
+  RateYourMusicApiratingsalbumidPOSTD1CD72A8:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId:
+        Ref: RateYourMusicAuthorizer3B87E402
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - RatingsLambda183F3C95
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApiratingsalbumid1136167B
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/POST/Resource
+  RateYourMusicApiratingsalbumidreviewuserid0CA0EF6D:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: RateYourMusicApiratingsalbumid1136167B
+      PathPart: "{review_user_id}"
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/{review_user_id}/Resource
+  RateYourMusicApiratingsalbumidreviewuseridOPTIONSDC04A890:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApiratingsalbumidreviewuserid0CA0EF6D
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/{review_user_id}/OPTIONS/Resource
+  RateYourMusicApiratingsalbumidreviewuseridlike950945FC:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: RateYourMusicApiratingsalbumidreviewuserid0CA0EF6D
+      PathPart: like
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/{review_user_id}/like/Resource
+  RateYourMusicApiratingsalbumidreviewuseridlikeOPTIONSCCC8E2A4:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApiratingsalbumidreviewuseridlike950945FC
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/{review_user_id}/like/OPTIONS/Resource
+  RateYourMusicApiratingsalbumidreviewuseridlikePOSTApiPermissionCdkStackRateYourMusicApi460852EDPOSTratingsalbumidreviewuseridlike9D7662FE:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - RatingsLambda183F3C95
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /POST/ratings/*/*/like
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/{review_user_id}/like/POST/ApiPermission.CdkStackRateYourMusicApi460852ED.POST..ratings.{album_id}.{review_user_id}.like
+  RateYourMusicApiratingsalbumidreviewuseridlikePOSTApiPermissionTestCdkStackRateYourMusicApi460852EDPOSTratingsalbumidreviewuseridlike46A7A0C4:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - RatingsLambda183F3C95
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/POST/ratings/*/*/like
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/{review_user_id}/like/POST/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.POST..ratings.{album_id}.{review_user_id}.like
+  RateYourMusicApiratingsalbumidreviewuseridlikePOST0D7445B8:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId:
+        Ref: RateYourMusicAuthorizer3B87E402
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - RatingsLambda183F3C95
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApiratingsalbumidreviewuseridlike950945FC
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/ratings/{album_id}/{review_user_id}/like/POST/Resource
+  RateYourMusicApiusersA963CFC6:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - RateYourMusicApiD17FF122
+          - RootResourceId
+      PathPart: users
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/users/Resource
+  RateYourMusicApiusersOPTIONS5996E181:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApiusersA963CFC6
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/users/OPTIONS/Resource
+  RateYourMusicApiusersfavoritesEF8BD50B:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: RateYourMusicApiusersA963CFC6
+      PathPart: favorites
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/users/favorites/Resource
+  RateYourMusicApiusersfavoritesOPTIONS4199C314:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApiusersfavoritesEF8BD50B
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/users/favorites/OPTIONS/Resource
+  RateYourMusicApiusersfavoritesalbumid3507CC07:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: RateYourMusicApiusersfavoritesEF8BD50B
+      PathPart: "{album_id}"
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/users/favorites/{album_id}/Resource
+  RateYourMusicApiusersfavoritesalbumidOPTIONSB13FAFC2:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApiusersfavoritesalbumid3507CC07
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/users/favorites/{album_id}/OPTIONS/Resource
+  RateYourMusicApiusersfavoritesalbumidPOSTApiPermissionCdkStackRateYourMusicApi460852EDPOSTusersfavoritesalbumid6DD856C0:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - FavoritesLambda04E097BA
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /POST/users/favorites/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/users/favorites/{album_id}/POST/ApiPermission.CdkStackRateYourMusicApi460852ED.POST..users.favorites.{album_id}
+  RateYourMusicApiusersfavoritesalbumidPOSTApiPermissionTestCdkStackRateYourMusicApi460852EDPOSTusersfavoritesalbumid441758B1:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - FavoritesLambda04E097BA
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/POST/users/favorites/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/users/favorites/{album_id}/POST/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.POST..users.favorites.{album_id}
+  RateYourMusicApiusersfavoritesalbumidPOSTC1BB66AB:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId:
+        Ref: RateYourMusicAuthorizer3B87E402
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - FavoritesLambda04E097BA
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApiusersfavoritesalbumid3507CC07
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/users/favorites/{album_id}/POST/Resource
+  RateYourMusicApiproducer31FB1AAF:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - RateYourMusicApiD17FF122
+          - RootResourceId
+      PathPart: producer
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/producer/Resource
+  RateYourMusicApiproducerOPTIONSFF99CC37:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApiproducer31FB1AAF
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/producer/OPTIONS/Resource
+  RateYourMusicApiproducerPOSTApiPermissionCdkStackRateYourMusicApi460852EDPOSTproducer94A07406:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ProducerLambdaC55AC1D4
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /POST/producer
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/producer/POST/ApiPermission.CdkStackRateYourMusicApi460852ED.POST..producer
+  RateYourMusicApiproducerPOSTApiPermissionTestCdkStackRateYourMusicApi460852EDPOSTproducer8979503F:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ProducerLambdaC55AC1D4
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/POST/producer
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/producer/POST/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.POST..producer
+  RateYourMusicApiproducerPOST52156C7F:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - ProducerLambdaC55AC1D4
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApiproducer31FB1AAF
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/producer/POST/Resource
+  RateYourMusicApiauth0C12BAF4:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - RateYourMusicApiD17FF122
+          - RootResourceId
+      PathPart: auth
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/auth/Resource
+  RateYourMusicApiauthOPTIONSB67A3422:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApiauth0C12BAF4
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/auth/OPTIONS/Resource
+  RateYourMusicApiauthcallback0E5D11E8:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: RateYourMusicApiauth0C12BAF4
+      PathPart: callback
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/auth/callback/Resource
+  RateYourMusicApiauthcallbackOPTIONS7AC2F40F:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApiauthcallback0E5D11E8
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/auth/callback/OPTIONS/Resource
+  RateYourMusicApiauthcallbackGETApiPermissionCdkStackRateYourMusicApi460852EDGETauthcallbackCE4BC9C4:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - AuthLambda6BB8C88C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /GET/auth/callback
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/auth/callback/GET/ApiPermission.CdkStackRateYourMusicApi460852ED.GET..auth.callback
+  RateYourMusicApiauthcallbackGETApiPermissionTestCdkStackRateYourMusicApi460852EDGETauthcallbackAA1FE2F8:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - AuthLambda6BB8C88C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/GET/auth/callback
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/auth/callback/GET/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.GET..auth.callback
+  RateYourMusicApiauthcallbackGETF0AE2ACB:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - AuthLambda6BB8C88C
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApiauthcallback0E5D11E8
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/auth/callback/GET/Resource
+  RateYourMusicApivote2CFABE71:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - RateYourMusicApiD17FF122
+          - RootResourceId
+      PathPart: vote
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/vote/Resource
+  RateYourMusicApivoteOPTIONS3FC3FF57:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApivote2CFABE71
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/vote/OPTIONS/Resource
+  RateYourMusicApivotePOSTApiPermissionCdkStackRateYourMusicApi460852EDPOSTvote59AE46AC:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - VoteLambda4858D112
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /POST/vote
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/vote/POST/ApiPermission.CdkStackRateYourMusicApi460852ED.POST..vote
+  RateYourMusicApivotePOSTApiPermissionTestCdkStackRateYourMusicApi460852EDPOSTvoteD6EC02E7:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - VoteLambda4858D112
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/POST/vote
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/vote/POST/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.POST..vote
+  RateYourMusicApivotePOSTF3E04E47:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId:
+        Ref: RateYourMusicAuthorizer3B87E402
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - VoteLambda4858D112
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApivote2CFABE71
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/vote/POST/Resource
+  RateYourMusicApifavorites1EF1FE05:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - RateYourMusicApiD17FF122
+          - RootResourceId
+      PathPart: favorites
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/favorites/Resource
+  RateYourMusicApifavoritesOPTIONS114C76DB:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApifavorites1EF1FE05
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/favorites/OPTIONS/Resource
+  RateYourMusicApifavoritesPOSTApiPermissionCdkStackRateYourMusicApi460852EDPOSTfavorites18FA42E8:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - FavoritesLambda04E097BA
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /POST/favorites
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/favorites/POST/ApiPermission.CdkStackRateYourMusicApi460852ED.POST..favorites
+  RateYourMusicApifavoritesPOSTApiPermissionTestCdkStackRateYourMusicApi460852EDPOSTfavorites2C1FB9A6:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - FavoritesLambda04E097BA
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/POST/favorites
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/favorites/POST/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.POST..favorites
+  RateYourMusicApifavoritesPOST8384A524:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId:
+        Ref: RateYourMusicAuthorizer3B87E402
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - FavoritesLambda04E097BA
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApifavorites1EF1FE05
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/favorites/POST/Resource
+  RateYourMusicApicharts42DEB05F:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - RateYourMusicApiD17FF122
+          - RootResourceId
+      PathPart: charts
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/charts/Resource
+  RateYourMusicApichartsOPTIONS5748AA8D:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApicharts42DEB05F
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/charts/OPTIONS/Resource
+  RateYourMusicApichartsregion2AF8733A:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: RateYourMusicApicharts42DEB05F
+      PathPart: "{region}"
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/charts/{region}/Resource
+  RateYourMusicApichartsregionOPTIONSBB6FE707:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApichartsregion2AF8733A
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/charts/{region}/OPTIONS/Resource
+  RateYourMusicApichartsregionyear62127713:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: RateYourMusicApichartsregion2AF8733A
+      PathPart: "{year}"
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/charts/{region}/{year}/Resource
+  RateYourMusicApichartsregionyearOPTIONSDC9A2C21:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: RateYourMusicApichartsregionyear62127713
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/charts/{region}/{year}/OPTIONS/Resource
+  RateYourMusicApichartsregionyearGETApiPermissionCdkStackRateYourMusicApi460852EDGETchartsregionyearC78569CD:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ChartsReadLambda35DD8E61
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /
+            - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+            - /GET/charts/*/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/charts/{region}/{year}/GET/ApiPermission.CdkStackRateYourMusicApi460852ED.GET..charts.{region}.{year}
+  RateYourMusicApichartsregionyearGETApiPermissionTestCdkStackRateYourMusicApi460852EDGETchartsregionyearF47B8BF9:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ChartsReadLambda35DD8E61
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:eu-west-3:384981131796:"
+            - Ref: RateYourMusicApiD17FF122
+            - /test-invoke-stage/GET/charts/*/*
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/charts/{region}/{year}/GET/ApiPermission.Test.CdkStackRateYourMusicApi460852ED.GET..charts.{region}.{year}
+  RateYourMusicApichartsregionyearGETB742D01C:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - arn:aws:apigateway:eu-west-3:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - ChartsReadLambda35DD8E61
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: RateYourMusicApichartsregionyear62127713
+      RestApiId:
+        Ref: RateYourMusicApiD17FF122
+    Metadata:
+      aws:cdk:path: CdkStack/RateYourMusicApi/Default/charts/{region}/{year}/GET/Resource
+  DeployFrontendAndConfigAwsCliLayer464B7089:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      Content:
+        S3Bucket: cdk-hnb659fds-assets-384981131796-eu-west-3
+        S3Key: c49d356cac773d491c5f7ac148995a1181498a8e289429f8612a7f7e3814f535.zip
+      Description: /opt/awscli/aws
+    Metadata:
+      aws:cdk:path: CdkStack/DeployFrontendAndConfig/AwsCliLayer/Resource
+      aws:asset:path: asset.c49d356cac773d491c5f7ac148995a1181498a8e289429f8612a7f7e3814f535.zip
+      aws:asset:is-bundled: false
+      aws:asset:property: Content
+  DeployFrontendAndConfigCustomResourceB66CD2E0:
+    Type: Custom::CDKBucketDeployment
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536
+          - Arn
+      SourceBucketNames:
+        - cdk-hnb659fds-assets-384981131796-eu-west-3
+        - cdk-hnb659fds-assets-384981131796-eu-west-3
+      SourceObjectKeys:
+        - 2a72124915657976bd468b12446cf049b65b44558b263e8cd688954fa9a5cd99.zip
+        - 3b343649b4e0dc3ad8ed76cbf5d364519d03d64b1d0dd0bfb33e36c8db1df646.zip
+      SourceMarkers:
+        - {}
+        - <<marker:0xbaba:0>>:
+            Ref: RateYourMusicUserPoolRateYourMusicDomainBA92D58A
+          <<marker:0xbaba:1>>:
+            Ref: RateYourMusicUserPoolRateYourMusicClient6F21225B
+          <<marker:0xbaba:2>>:
+            Fn::GetAtt:
+              - FrontendDistribution
+              - DomainName
+          <<marker:0xbaba:3>>:
+            Fn::GetAtt:
+              - FrontendDistribution
+              - DomainName
+          <<marker:0xbaba:4>>:
+            Ref: RateYourMusicApiD17FF122
+          <<marker:0xbaba:5>>:
+            Ref: AWS::URLSuffix
+          <<marker:0xbaba:6>>:
+            Ref: RateYourMusicApiDeploymentStageprod2E544B60
+      SourceMarkersConfig:
+        - {}
+        - {}
+      DestinationBucketName:
+        Ref: FrontendBucketEFE2E19C
+      WaitForDistributionInvalidation: true
+      Prune: true
+      DistributionPaths:
+        - /*
+      OutputObjectKeys: true
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkStack/DeployFrontendAndConfig/CustomResource/Default
+  CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/Resource
+  CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:GetBucket*
+              - s3:GetObject*
+              - s3:List*
+            Effect: Allow
+            Resource:
+              - arn:aws:s3:::cdk-hnb659fds-assets-384981131796-eu-west-3
+              - arn:aws:s3:::cdk-hnb659fds-assets-384981131796-eu-west-3/*
+          - Action:
+              - s3:Abort*
+              - s3:DeleteObject*
+              - s3:GetBucket*
+              - s3:GetObject*
+              - s3:List*
+              - s3:PutObject
+              - s3:PutObjectLegalHold
+              - s3:PutObjectRetention
+              - s3:PutObjectTagging
+              - s3:PutObjectVersionTagging
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - FrontendBucketEFE2E19C
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - FrontendBucketEFE2E19C
+                        - Arn
+                    - /*
+          - Action:
+              - cloudfront:CreateInvalidation
+              - cloudfront:GetInvalidation
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF
+      Roles:
+        - Ref: CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265
+    Metadata:
+      aws:cdk:path: CdkStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/DefaultPolicy/Resource
+  CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-384981131796-eu-west-3
+        S3Key: 3423a042b818e31c1e34a19d6689ab2e5f9b70fcbe9e71df66f241b20a200bd9.zip
+      Environment:
+        Variables:
+          AWS_CA_BUNDLE: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+      Handler: index.handler
+      Layers:
+        - Ref: DeployFrontendAndConfigAwsCliLayer464B7089
+      Role:
+        Fn::GetAtt:
+          - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265
+          - Arn
+      Runtime: python3.11
+      Timeout: 900
+    DependsOn:
+      - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF
+      - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265
+    Metadata:
+      aws:cdk:path: CdkStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/Resource
+      aws:asset:path: asset.3423a042b818e31c1e34a19d6689ab2e5f9b70fcbe9e71df66f241b20a200bd9
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CLogGroup817B64E9:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/LogGroup/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/+0cbW/bNvO3TB8LVtvaBxuQb46T9gmWPPFst8NmBMGZOstcKFLjS1xX0H8fSIqS7KYdnjVZnExAgkjH0+nuSN4L76JX6avv/5N+9w1s9Eua3bzkbJlWMwP0hsBGX1f6dVodW3qDZlElYI08QY4GL5e/IzU6OTLKIkmWXNKbiV1yRkeUotbJUfIiIcnSP/k/KLABKCzkLfCJ5Ixuk6MkQ22U3Cb1FRmvRHgRCX8CzqJqiHgCfbQw3iAfg8bFVU0olzZbKSlMWo1X4lKxnInA0lgKoyR3BE6YNootrWFS1EQLnVZzWTK6qBLj/rYMh/f5MTKzS00VK91DEbGRCkVWSiZMc1sqaSSVPDlKsADGE5KsGDeoWrFf7IF+YWZ9gVpDjscyixgZQnaOxqD62aLtc9TnpSZU5oIZmVbvtCMoeTNV71Gx1TY5qho2/GTVJClB641UWWSnSgomzlHkZt1O0x+WKTxhOesmuQGeyw0qChpbep+bVJJo5KsZy8W78lTAkmMWaWmWizMx4gw06n0Oa1IlkGVzxfIcVXK0qGri2XqRXAX5o6AkXow5Q+GWqG0AjSBgzfoNlxv/Dj/WyN4yn6NABQZnSJVbZSvgGkkiR9Zpo0oocL4EevNO8biqV5Ggoy4V+whuHsYyw7cK3CoIMrKi5IwyszdQk4TLXFrTo6ipLDHc1LsSBsFaOU9kAUx8KmezBMKwYy3zVxOFK/bhLroBsyYcimUGfrNMUBVMayYFOZH0BtVZATm+sYI2Sx7FLVNSFNiu9AILqbYz9jHub8MKlNa0XGXNqiWVm9SvIvDVr29/HlmQr9fE52+exRQNTAwc3MPrHwr3McXyNjyaZHJ6i8LMpFUUL6AsmchdYAIqx/jkEgxd9+gW8OHYgZjIf2Eik5sOPpaCWqVQtBGKwlIq4/HPDBZvgHGrMPosjB493HWsjJTYCXH0zt2poGrrA5dWdqMYdeHZiuU9KT8VzkHPYYvqPSrvpmZM5ByNFD0nZS2LPHGHq5OjhQscyB1qD85vYlUp9d2aV5Lj5+YIyzUWqIDPjFSQY2/otqTd1cwuBZqeFlBvtcEiMiHzt0racn+uSbIGkXEXAAVWrHC8tcsQsuwCDWRgIIhIXHRxdfdQEzr19PSXynlKijjtc98JHAbP+5LWVzXJtgIKmS3Tau6W8KJKSlCGOcX8hD4eFl3GYralu5wlNUmWjHMm8ovA2WT06/XkdHo9Pf353els/qXshhzSK7RU5tGZ+NuvCBmZm7eaaB+z6wIE5KjSKsTwi2ovqJ8ZxUTus4wPlNsMJ24bWAhGKATr7RMe1/MecrkmX9hJj3SP7ByLkoOJy7EZ28sgAx81Qfoqrd6XLtEs4MPoY9wLAsxbMLiBbZsR+L0SjKJVDauLHXUGlHlQaki+k7pJkN5PxiSAwqZzGeEtMA5LxpnZ/iZFb4eeRYNJWaaOXSrfeoUyEDkrL8U5WEHXbXJT3v4w3kMH7dO68vaHUZYp1PpSjBVCa+v9fjwELg6GkcPgoj1TEGjc1VRag36LdfAONtJaUuYJtMju4kwYVALjQm5WYXM3Mgbo2tlnMkNqFTNbb+sXVc9FAOdyM+L80pqltCLm6HEHdU+5jaTTasytNqh6NAJuAydvQOXguNY3J7hiwpul6B3u+m1sSx+duGMjYAJVB6sJgyKtptL7DtDaFpgde2tXKiYoK4GPKJW29aUBxz0woj3NJ8FyhYMY5iIrbxg62DbGUnV0ZnM5ia+ItnFRNaNex2eCM4HtWOsHvzj4DET4Mt2HG30GqnsGIgxzdH8iPANt/cs39CDg3xPwKfIcUvMu3zjUbfUVozsCkqc5v/9yizSIMIhwwLvsKmSyHEnTdeB0EVmZy6k//Nzj8FNwls0MGHRZro6vvTdCDwl+MtI+GUafun6eKf0nMYlPfUscHqH7AHsXEbyDO35U16A1Gp32WmVGDuLG0imWUjMj1TY0phEuc51W502Fy5XfmsudwP2pABUaFCE6+PFB3uGVHbVVE19c1mk1tf7EVdM1ZpbvVgAdygRcs5zYixeaenjP0VtfPPpDp5VvrHMHyEyzcAo/75U9A7rHqQmULA+H2Wk1Du1WsZlKj5pGMFSLeIzcgcgUtRmVbFElGa7AcjOWSrvWLM7ytbn0xfDQT+YOwEPPYqwDedB/EbKuju5BF2jWMtMxPMuw5HLbI6UN5P2sMFGBiT0dN6yRE/98EXroMmybC+MrSxaLr+hOwzt03Z+EuTyXOaPAXfFiJ+wa4AN8gA/wAX433BvjzqqSmTPf3hRHUCz679r1UBt1MOdlfLOUjzi8Fwo+YuH8dRiK7TTGlGGsATBhMFfQM/iy55RaR7Z71xaod7qgm3YE73KgZD/hdhraxrO2tfpufN8ItpbZFHUphW6OGLQBY/W4awVSzfAEFBTYdpfVV/Fw72KHyv9LhAzK+qeU1caSg7oHdT87dQ/KGtbmoap7UNYjrc197fSnIdYnh3kdNsEBK2tYwoc4K4OyBmUN+/25z8oQJg8W41CVNazNwUAPszLMykHPyqCsQVn/xH5vvrUTyLSFufB/5l0prwSznoAyrfMcRuMoeahOmcMU99FGYw+QX5810a+vq67inIZPq/Wq0k3Lm+9zq2syttrIol3env6L7h9p48Ae3kTJW5ahcnVq4km5+rX7vMddlO7j13NzaU1pTfO9q2v/9Ytr2GjKWTra6DFn/jMRoUg/2Zq1FN++Tr9/lb7+5nfN2MvmoxPpNPz9Ex/2Foc3TwAA
+    Metadata:
+      aws:cdk:path: CdkStack/CDKMetadata/Default
+Outputs:
+  RateYourMusicApiEndpointA9F13652:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: RateYourMusicApiD17FF122
+          - .execute-api.eu-west-3.
+          - Ref: AWS::URLSuffix
+          - /
+          - Ref: RateYourMusicApiDeploymentStageprod2E544B60
+          - /
+  CloudFrontURL:
+    Value:
+      Fn::GetAtt:
+        - FrontendDistribution
+        - DomainName
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+
